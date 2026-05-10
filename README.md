@@ -11,6 +11,7 @@
 - 0 条可核验真实新闻时，会生成 1 张提示卡：`过去2小时未抓取到足够可核验新闻`。
 - DeepSeek 只总结输入的 RSS 新闻字段，不允许编造新闻。
 - 每条入选新闻保留来源、发布时间、原文链接。
+- 卡片主体使用 `keyPoints`、`whyItMatters` 和 `informationLimit`：信息不足提示每张卡片最多显示一次。
 
 ## Windows 本机运行
 
@@ -161,6 +162,7 @@ Get-Content -Encoding UTF8 output\selected-news.json
 - `category`
 - `keyPoints`
 - `whyItMatters`
+- `informationLimit`
 
 如果本轮 0 条新闻，`selected-news.json` 会是空数组，同时会生成 1 张提示卡。
 
@@ -251,6 +253,27 @@ npm run test:pushplus
 3. `Build and deployment` 的 `Source` 选择 `GitHub Actions`。
 4. 保存。
 
+## main 分支与生成文件
+
+`main` 分支只保存源代码和必要占位文件，不再保存每轮自动生成的新闻图片、`cards.json`、`manifest.json` 或 `dist-web` 构建产物。
+
+GitHub Actions 会在云端完成抓取新闻、DeepSeek 总结、生成 PNG、构建 PWA，然后通过 `actions/upload-pages-artifact` 和 `actions/deploy-pages` 发布到 GitHub Pages。生成内容只进入 Pages artifact，不会再自动 commit 回 `main`，这样本地 `git push` 就不会因为远程自动追加图片文件而频繁冲突。
+
+为了保留 PWA 历史卡片，workflow 会在生成前尝试从已发布的 `PUBLIC_BASE_URL/cards/cards.json` 拉取现有记录和图片到 CI 临时目录，再随本轮新卡片一起发布。这个过程不会污染 `main` 分支。
+
+默认最多恢复最近 `240` 条历史卡片记录；如需调整，可在 GitHub Variables 中设置 `PAGES_HISTORY_RESTORE_LIMIT`。
+
+本地生成内容已加入 `.gitignore`，包括：
+
+- `output/`
+- `public/cards/`
+- `web/public/cards/*.png`
+- `web/public/cards/cards.json`
+- `web/public/cards/manifest.json`
+- `dist-web/`
+
+`public/cards/.gitkeep` 和 `web/public/cards/.gitkeep` 用来保留空目录。
+
 ## GitHub Secrets 和 Variables
 
 进入：
@@ -272,6 +295,7 @@ Variables：
 - `NEWS_KEYWORDS`，可选
 - `DEEPSEEK_MODEL`，可选
 - `DEEPSEEK_BASE_URL`，可选
+- `PAGES_HISTORY_RESTORE_LIMIT`，可选，默认 `240`
 
 注意：本机 `.env` 不会影响 GitHub Actions。云端必须在 `.github/workflows/news.yml`、GitHub Secrets 或 GitHub Variables 中单独配置。workflow 已明确设置：
 
@@ -323,6 +347,15 @@ MAX_NEWS_CARDS: "8"
 - 是否推送 PushPlus
 
 不会打印任何 API Key 或 Token。
+
+## GitHub Actions Warning
+
+当前 Actions 日志里可能看到两类 warning：
+
+- `Skip setting environment url as environment 'github-pages' may contain secret.`
+- `Node.js 20 actions are deprecated.`
+
+这两个 warning 暂时不影响新闻生成、GitHub Pages 发布和 PushPlus 推送。`Node.js 20 actions are deprecated` 后续可以通过更新相关 GitHub Actions 版本，或按 GitHub 提示设置 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` 处理。当前版本暂不为这两个 warning 大改部署逻辑。
 
 ## GitHub Actions 中文字体
 

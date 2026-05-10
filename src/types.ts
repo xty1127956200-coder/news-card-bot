@@ -38,6 +38,7 @@ export type SelectedNewsItem = {
   titleZh: string;
   keyPoints: string[];
   whyItMatters: string[];
+  informationLimit: string;
   score?: number;
   rssSummary?: string;
 };
@@ -48,6 +49,7 @@ export type EmptyStateCard = {
   titleZh: "过去2小时未抓取到足够可核验新闻";
   keyPoints: string[];
   whyItMatters: string[];
+  informationLimit: string;
   sourceName: string;
   publishedAt: string;
   url: string;

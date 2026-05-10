@@ -6,10 +6,12 @@ type SummaryResponse = {
   titleZh?: string;
   keyPoints?: string[];
   whyItMatters?: string[];
+  informationLimit?: string;
   category?: string;
 };
 
 const allowedCategories: Array<Exclude<NewsCategory, "提示">> = ["AI", "芯片", "市场", "公司", "政策", "国际"];
+const INFO_LIMIT_TEXT = "信息不足，需等待更多来源确认";
 
 export async function summarizeNewsItems(items: NewsItem[]): Promise<SelectedNewsItem[]> {
   const results: SelectedNewsItem[] = [];
@@ -51,7 +53,30 @@ async function summarizeOneNews(item: NewsItem): Promise<SelectedNewsItem> {
         },
         {
           role: "user",
-          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。不要把同一事实在不同字段重复表达。若信息不足，在 keyPoints 中明确写“信息不足，需等待更多来源确认”。分类只能从 AI、芯片、市场、公司、政策、国际 中选一个。输出 JSON：{"titleZh":"","keyPoints":["","","","",""],"whyItMatters":["",""],"category":""}。要求：keyPoints 用 4-6 条短句，覆盖发生了什么、涉及主体、关键时间/动作/数据、当前进展、必要背景；whyItMatters 只写影响、风险、趋势意义，不重复 keyPoints 里的事实。输入新闻：${JSON.stringify({
+          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。不要把同一事实在不同字段重复表达。分类只能从 AI、芯片、市场、公司、政策、国际 中选一个。
+
+输出严格 JSON：
+{"titleZh":"","keyPoints":["","","","","","",""],"whyItMatters":["","",""],"informationLimit":"","category":""}
+
+keyPoints 要求：
+1. 优先生成 5-8 条，每条 18-38 个中文字符。
+2. 每条必须是不同信息，不要重复。
+3. 内容优先级：发生了什么、涉及主体、关键动作、时间或地点、数据/金额/规模/版本号等可用细节、当前进展、背景或上下文、不确定性或待确认信息。
+4. 只能基于输入新闻，不允许添加输入中没有的事实、数字、公司、事件或结论。
+5. 如果原始新闻信息不足，不要硬编，只生成能确认的点。
+
+whyItMatters 要求：
+1. 生成 2-3 条，只写影响、风险、趋势意义。
+2. 不要重复 keyPoints 里的事实。
+3. 不要写“值得关注”等空泛表述。
+4. 不能添加原文没有支撑的结论。
+
+informationLimit 要求：
+1. 只有信息不足时填写“${INFO_LIMIT_TEXT}”。
+2. 如果 informationLimit 已填写，不要在 keyPoints 或 whyItMatters 中重复这句话。
+3. 如果信息足够，informationLimit 为空字符串。
+
+输入新闻：${JSON.stringify({
             originalTitle: item.originalTitle,
             sourceName: item.sourceName,
             publishedAt: item.publishedAt,
@@ -83,26 +108,30 @@ function fallbackSummary(item: NewsItem): SelectedNewsItem {
     fetchedAt: item.fetchedAt,
     category,
     titleZh: item.originalTitle.slice(0, 48),
-    keyPoints: [
-      item.rssSummary || item.originalTitle,
-      `来源：${item.sourceName}`,
-      `发布时间：${formatDateTime(item.publishedAt)}`,
-      `原文链接已保留，可用于核验。`,
-      "信息不足，需等待更多来源确认。"
-    ],
-    whyItMatters: ["信息不足，需等待更多来源确认。"],
+    keyPoints: fallbackKeyPoints(item),
+    whyItMatters: [],
+    informationLimit: INFO_LIMIT_TEXT,
     score: item.score,
     rssSummary: item.rssSummary
   };
 }
 
 function normalizeSummary(item: NewsItem, parsed: SummaryResponse): SelectedNewsItem {
-  const fallback = "信息不足，需等待更多来源确认。";
   const category = normalizeCategory(parsed.category || item.category);
-  const keyPoints = Array.isArray(parsed.keyPoints) ? parsed.keyPoints.filter(Boolean).slice(0, 6) : [];
-  while (keyPoints.length < 4) keyPoints.push(fallback);
-  const whyItMatters = Array.isArray(parsed.whyItMatters) ? parsed.whyItMatters.filter(Boolean).slice(0, 2) : [];
-  if (whyItMatters.length === 0) whyItMatters.push(fallback);
+  const rawKeyPoints = Array.isArray(parsed.keyPoints) ? parsed.keyPoints : [];
+  const rawWhyItMatters = Array.isArray(parsed.whyItMatters) ? parsed.whyItMatters : [];
+  let keyPoints = dedupeSentences(rawKeyPoints).slice(0, 8);
+  const usedKeys = new Set(keyPoints.map(toCompareKey));
+  const whyItMatters = dedupeSentences(rawWhyItMatters, usedKeys)
+    .filter((item) => !/值得关注/.test(item))
+    .slice(0, 3);
+  const informationLimit =
+    normalizeInformationLimit(parsed.informationLimit, rawKeyPoints, rawWhyItMatters) ||
+    (keyPoints.length === 0 ? INFO_LIMIT_TEXT : "");
+
+  if (keyPoints.length === 0) {
+    keyPoints = fallbackKeyPoints(item);
+  }
 
   return {
     type: "news",
@@ -116,9 +145,54 @@ function normalizeSummary(item: NewsItem, parsed: SummaryResponse): SelectedNews
     titleZh: (parsed.titleZh || item.originalTitle).slice(0, 80),
     keyPoints,
     whyItMatters,
+    informationLimit,
     score: item.score,
     rssSummary: item.rssSummary
   };
+}
+
+function fallbackKeyPoints(item: NewsItem): string[] {
+  return dedupeSentences([
+    item.rssSummary || item.originalTitle,
+    `来源媒体：${item.sourceName}`,
+    `发布时间：${formatDateTime(item.publishedAt)}`,
+    "原文链接已保留，可用于核验"
+  ]);
+}
+
+function dedupeSentences(values: unknown[], existingKeys = new Set<string>()): string[] {
+  const seen = new Set(existingKeys);
+  const result: string[] = [];
+  for (const value of values) {
+    const sentence = cleanSentence(value);
+    if (!sentence || isInfoLimitSentence(sentence)) continue;
+    const key = toCompareKey(sentence);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(sentence);
+  }
+  return result;
+}
+
+function cleanSentence(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s\-•·*、.。；;:：\d()（）]+/, "")
+    .trim();
+}
+
+function normalizeInformationLimit(limit: unknown, rawKeyPoints: unknown[], rawWhyItMatters: unknown[]): string {
+  const allValues = [limit, ...rawKeyPoints, ...rawWhyItMatters];
+  return allValues.some(isInfoLimitSentence) ? INFO_LIMIT_TEXT : "";
+}
+
+function isInfoLimitSentence(value: unknown): boolean {
+  const normalized = String(value ?? "").replace(/[，,。.!！?？\s]/g, "");
+  return normalized.includes(INFO_LIMIT_TEXT.replace(/[，,。.!！?？\s]/g, ""));
+}
+
+function toCompareKey(value: string): string {
+  return value.replace(/[，,。.!！?？；;：:\s]/g, "").toLowerCase();
 }
 
 function normalizeCategory(value: unknown): Exclude<NewsCategory, "提示"> {

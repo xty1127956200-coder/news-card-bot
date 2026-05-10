@@ -128,6 +128,7 @@ function createEmptyStateCard(): CardData {
     titleZh: "过去2小时未抓取到足够可核验新闻",
     keyPoints: ["本轮跳过，未生成AI编造内容。", "时间范围严格限定为过去2小时。", "未扩大抓取窗口。", "未使用 AI 编造新闻。"],
     whyItMatters: ["保持新闻卡片只基于可核验来源。", "避免把缺失信息包装成事实。"],
+    informationLimit: "信息不足，需等待更多来源确认",
     sourceName: "系统提示",
     publishedAt: "",
     url: ""

@@ -4,5 +4,10 @@ dist-web/
 web/dist/
 .env
 output/
+public/cards/*
+!public/cards/.gitkeep
+web/public/cards/*.png
+web/public/cards/cards.json
+web/public/cards/manifest.json
 playwright-report/
 test-results/
