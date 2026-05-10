@@ -1,6 +1,38 @@
 {
-  "updatedAt": "2026-05-10T21:06:08.449Z",
+  "updatedAt": "2026-05-10T21:30:03.088Z",
   "runs": [
+    {
+      "id": "20260510T213003Z",
+      "generatedAt": "2026-05-10T21:30:03.088Z",
+      "rangeStart": "2026-05-10T19:30:03.088Z",
+      "rangeEnd": "2026-05-10T21:30:03.088Z",
+      "images": [
+        "/cards/20260510T213003Z-card-1.png",
+        "/cards/20260510T213003Z-card-2.png",
+        "/cards/20260510T213003Z-card-3.png",
+        "/cards/20260510T213003Z-card-4.png",
+        "/cards/20260510T213003Z-card-5.png",
+        "/cards/20260510T213003Z-card-6.png",
+        "/cards/20260510T213003Z-card-7.png",
+        "/cards/20260510T213003Z-card-8.png",
+        "/cards/20260510T213003Z-card-9.png",
+        "/cards/20260510T213003Z-card-10.png",
+        "/cards/20260510T213003Z-card-11.png",
+        "/cards/20260510T213003Z-card-12.png"
+      ],
+      "sources": [
+        "新浪财经",
+        "BBC News",
+        "Punchbowl News",
+        "The Business Journals",
+        "Anthony Ha",
+        "Captain Electro",
+        "The Verge",
+        "The Economic Times",
+        "Wccftech",
+        "Intellectia AI"
+      ]
+    },
     {
       "id": "20260510T210608Z",
       "generatedAt": "2026-05-10T21:06:08.449Z",
