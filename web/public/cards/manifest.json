@@ -1,6 +1,32 @@
 {
-  "updatedAt": "2026-05-10T20:28:07.415Z",
+  "updatedAt": "2026-05-10T20:54:59.641Z",
   "runs": [
+    {
+      "id": "20260510T205459Z",
+      "generatedAt": "2026-05-10T20:54:59.641Z",
+      "rangeStart": "2026-05-10T18:54:59.641Z",
+      "rangeEnd": "2026-05-10T20:54:59.641Z",
+      "images": [
+        "/cards/20260510T205459Z-card-1.png",
+        "/cards/20260510T205459Z-card-2.png",
+        "/cards/20260510T205459Z-card-3.png",
+        "/cards/20260510T205459Z-card-4.png",
+        "/cards/20260510T205459Z-card-5.png",
+        "/cards/20260510T205459Z-card-6.png",
+        "/cards/20260510T205459Z-card-7.png",
+        "/cards/20260510T205459Z-card-8.png"
+      ],
+      "sources": [
+        "Punchbowl News",
+        "The Business Journals",
+        "Anthony Ha",
+        "新浪财经",
+        "Captain Electro",
+        "The Verge",
+        "BBC News",
+        "The Economic Times"
+      ]
+    },
     {
       "id": "20260510T202807Z",
       "generatedAt": "2026-05-10T20:28:07.415Z",
