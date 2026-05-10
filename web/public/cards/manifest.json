@@ -1,6 +1,32 @@
 {
-  "updatedAt": "2026-05-10T20:15:20.012Z",
+  "updatedAt": "2026-05-10T20:28:07.415Z",
   "runs": [
+    {
+      "id": "20260510T202807Z",
+      "generatedAt": "2026-05-10T20:28:07.415Z",
+      "rangeStart": "2026-05-10T18:28:07.415Z",
+      "rangeEnd": "2026-05-10T20:28:07.415Z",
+      "images": [
+        "/cards/20260510T202807Z-card-1.png",
+        "/cards/20260510T202807Z-card-2.png",
+        "/cards/20260510T202807Z-card-3.png",
+        "/cards/20260510T202807Z-card-4.png",
+        "/cards/20260510T202807Z-card-5.png",
+        "/cards/20260510T202807Z-card-6.png",
+        "/cards/20260510T202807Z-card-7.png",
+        "/cards/20260510T202807Z-card-8.png"
+      ],
+      "sources": [
+        "The Business Journals",
+        "BBC News",
+        "The Economic Times",
+        "Intellectia AI",
+        "The Motley Fool",
+        "Yahoo Finance Singapore",
+        "PR Newswire",
+        "Forbes"
+      ]
+    },
     {
       "id": "20260510T201520Z",
       "generatedAt": "2026-05-10T20:15:20.012Z",
