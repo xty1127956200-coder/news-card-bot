@@ -1,165 +1,73 @@
 # News Card Bot
 
-每 2 小时自动抓取新闻、筛选排序、生成中文资讯图片卡片，发布到 GitHub Pages，并通过 PushPlus 推送到微信。
+每 2 小时抓取过去 2 小时内的真实新闻，一条入选新闻生成一张 9:16 竖屏图片，发布到 GitHub Pages，并通过 PushPlus 推送到微信。
 
-## 当前能力
+## 当前模式
 
-- TypeScript + Node.js 主流程
-- RSS / Google News RSS 新闻抓取
-- 过去 2 小时新闻过滤、去重、分类、重要性排序
-- DeepSeek 默认中文简报总结，保留 OpenAI 兼容选项
-- HTML + CSS 固定模板渲染，Playwright 截图生成 9:16 PNG
-- 图片复制到 `web/public/cards/`，由 GitHub Pages 托管
-- `web/public/cards/cards.json` 记录历史卡片
-- PushPlus HTML 图片推送
-- Mock 模式，无 API Key 也能测试视觉效果
-- `web/` 轻量 PWA，展示历史新闻卡片
-- GitHub Actions 每 2 小时生成、部署 Pages、再推送微信
+- 一条新闻生成一张图片。
+- 每轮默认最多生成 `8` 张。
+- 时间范围固定为过去 `2` 小时，不扩大到 6 小时或更长。
+- `MOCK_MODE=false` 时绝不 fallback 到 mock 新闻。
+- 0 条可核验真实新闻时，会生成 1 张提示卡：`过去2小时未抓取到足够可核验新闻`。
+- DeepSeek 只总结输入的 RSS 新闻字段，不允许编造新闻。
+- 每条入选新闻保留来源、发布时间、原文链接。
 
-## Windows 本机从零运行
+## Windows 本机运行
 
-### 1. 确认 Node.js 和 npm
+进入项目：
 
-打开 PowerShell：
+```powershell
+cd "C:\Users\Zhish\OneDrive\文档\New project 2\news-card-bot"
+```
+
+检查 Node.js/npm：
 
 ```powershell
 node --version
 npm --version
 ```
 
-正常会看到类似：
-
-```text
-v24.15.0
-11.12.1
-```
-
-如果 `npm.ps1 cannot be loaded`，用 `npm.cmd` 替代 `npm`：
-
-```powershell
-npm.cmd --version
-```
-
-### 2. 进入项目目录
-
-```powershell
-cd "C:\Users\Zhish\OneDrive\文档\New project 2\news-card-bot"
-dir
-```
-
-应该能看到 `package.json`、`src`、`web`、`templates`、`styles`。
-
-### 3. 安装依赖
+安装依赖：
 
 ```powershell
 npm install
 ```
 
-如果 PowerShell 拦截：
+如果 PowerShell 拦截 `npm`，用：
 
 ```powershell
 npm.cmd install
 ```
 
-本项目会在 `postinstall` 阶段自动安装 Playwright Chromium：
-
-```json
-"postinstall": "playwright install chromium"
-```
-
-如果 Chromium 下载失败，可以单独执行：
-
-```powershell
-npx playwright install chromium
-```
-
-或：
+Playwright Chromium 会在 `npm install` 后自动安装。失败时可手动执行：
 
 ```powershell
 npx.cmd playwright install chromium
 ```
 
-常见 `npm install` 问题：
+## 本地 Mock 视觉测试
 
-- `npm is not recognized`: Node.js/npm 没装好，或 PATH 没生效，重新打开 PowerShell 再试。
-- `npm.ps1 cannot be loaded`: 使用 `npm.cmd install`。
-- `ENOENT package.json`: 当前目录不对，先 `cd` 到 `news-card-bot`。
-- `EPERM` / `EACCES`: 文件被 OneDrive、编辑器或杀毒软件占用，稍等或关闭占用程序后重试。
-- Playwright 下载失败：换网络后执行 `npx.cmd playwright install chromium`。
-
-## 本地 Mock 生成
-
-默认就是 mock 模式，不需要 DeepSeek/OpenAI API Key，不抓真实新闻：
-
-```powershell
-npm run generate
-```
-
-也可以显式运行：
+Mock 只用于本地看卡片视觉效果：
 
 ```powershell
 npm run generate:mock
 ```
 
-生成后会出现：
-
-- `output/<runId>.json`: 本次卡片数据
-- `output/html/<runId>/card-1.html`: 每张卡片 HTML
-- `output/images/<runId>/card-1.png`: 每张卡片 PNG
-- `public/cards/<runId>/card-1.png`: 本地公开副本
-- `web/public/cards/<runId>-card-1.png`: GitHub Pages / PWA 使用的图片
-- `web/public/cards/cards.json`: 历史卡片索引
-
-`runId` 类似 `20260510T105044Z`。
-
-本地检查代码：
-
-```powershell
-npm run check
-```
-
-## 为什么本地图片不能直接推送到微信
-
-PushPlus 推送正文里使用：
-
-```html
-<img src="https://..." />
-```
-
-微信客户端只能加载公网可访问的 HTTPS 图片。你电脑里的本地路径，例如：
-
-```text
-C:\Users\Zhish\...\card-1.png
-```
-
-对微信服务器和手机来说都不可访问，所以不能直接推送。本项目的正确流程是：
-
-1. 本地或 Actions 生成 PNG。
-2. 复制到 `web/public/cards/`。
-3. GitHub Actions 构建并发布 `web/` 到 GitHub Pages。
-4. PushPlus 使用 GitHub Pages 上的 HTTPS 图片链接推送。
-
-如果本地开启了：
+真实模式不要使用 mock：
 
 ```bash
-ENABLE_PUSH=true
+MOCK_MODE=false
 ```
 
-但没有配置 `PUBLIC_BASE_URL`，程序不会中断，会提示：
+## 真实新闻配置
 
-```text
-图片已生成，但未配置 PUBLIC_BASE_URL，跳过 PushPlus 推送。
-```
-
-## DeepSeek 配置，推荐方案
-
-复制配置文件：
+复制配置：
 
 ```powershell
 copy .env.example .env
 ```
 
-真实新闻生成推荐填写：
+推荐 DeepSeek：
 
 ```bash
 MOCK_MODE=false
@@ -167,81 +75,182 @@ LLM_PROVIDER=deepseek
 DEEPSEEK_API_KEY=TODO_your_deepseek_api_key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
-NEWS_RSS_URLS=https://news.google.com/rss/search?q=AI%20OR%20technology%20OR%20finance&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+NEWS_LOOKBACK_HOURS=2
+MAX_NEWS_CARDS=8
 ```
 
-摘要任务默认使用 `deepseek-v4-flash`。如果想要更强效果，可改成：
+更强效果可改：
 
 ```bash
 DEEPSEEK_MODEL=deepseek-v4-pro
 ```
 
-OpenAI 是可选兼容方案：
+OpenAI 仍是可选兼容方案：
 
 ```bash
 LLM_PROVIDER=openai
 OPENAI_API_KEY=TODO_your_openai_api_key
-OPENAI_MODEL=gpt-4o-mini
 ```
 
-不要上传 `.env` 文件；项目已在 `.gitignore` 中忽略 `.env`。
+不要上传 `.env` 文件。
 
-## PushPlus 单独测试
+## RSS 源
 
-这个命令不抓新闻、不调用 DeepSeek/OpenAI，只测试 PushPlus：
+如果 `NEWS_RSS_URLS` 留空，系统会使用内置 18 个混合 RSS 源，包括 Google News 查询和官方/媒体 RSS：
+
+- AI / 大模型：OpenAI、DeepSeek、Anthropic、Gemini、Meta AI、人工智能、大模型
+- 芯片 / 半导体：NVIDIA、AMD、TSMC、台积电、芯片、半导体
+- 科技公司：Microsoft、Apple、Google、Meta、Amazon、Tesla
+- 马斯克相关：Elon Musk、SpaceX、xAI、Tesla
+- 金融市场：Nasdaq、S&P 500、美股、科技股、Federal Reserve、宏观经济
+- 国际科技政策：AI regulation、export controls、chip ban、technology policy
+- 媒体/机构源：The Verge、TechCrunch、Ars Technica、MIT News、NASA、Federal Reserve、SEC、BBC、Le Monde
+
+自定义 RSS 支持逗号分隔：
+
+```bash
+NEWS_RSS_URLS=https://news.google.com/rss/search?q=OpenAI&hl=zh-CN&gl=CN&ceid=CN:zh-Hans,https://techcrunch.com/feed/
+```
+
+也支持多行配置，例如在 GitHub Variables 中写多行 URL。某个 RSS 源失败不会中断全部任务，日志会记录失败并继续抓其他源。
+
+## 调整生成数量
+
+默认最多 8 张：
+
+```bash
+MAX_NEWS_CARDS=8
+```
+
+如果想更稳定，可以调成 6：
+
+```bash
+MAX_NEWS_CARDS=6
+```
+
+不建议默认 12，因为 DeepSeek 总结、Playwright 截图和微信加载都会变慢。程序仍保留最多 12 张的安全上限。
+
+## 输出文件
+
+每次运行都会生成：
+
+- `output/raw-news.json`
+- `output/selected-news.json`
+- `output/*.png`
+- `web/public/cards/cards.json`
+
+查看全部抓到的原始新闻：
 
 ```powershell
-npm run test:pushplus
+Get-Content -Encoding UTF8 output\raw-news.json
 ```
 
-`.env` 至少填写：
+查看最终入选、用于生成图片的新闻：
 
-```bash
-PUSHPLUS_TOKEN=TODO_your_pushplus_token
+```powershell
+Get-Content -Encoding UTF8 output\selected-news.json
 ```
 
-如要测试图片，可填写一个公网 HTTPS 图片：
+`selected-news.json` 中每条新闻都包含：
 
-```bash
-TEST_IMAGE_URL=https://example.com/test.png
+- `originalTitle`
+- `sourceName`
+- `publishedAt`
+- `url`
+- `fetchedAt`
+- `category`
+- `summary`
+- `facts`
+- `whyItMatters`
+
+如果本轮 0 条新闻，`selected-news.json` 会是空数组，同时会生成 1 张提示卡。
+
+## cards.json 核验
+
+PWA 和 GitHub Pages 使用：
+
+```text
+web/public/cards/cards.json
 ```
 
-## PUBLIC_BASE_URL 应该怎么填
+每张图片对应一条记录，包含：
 
-推荐把 GitHub Pages 的站点根地址填入 `PUBLIC_BASE_URL`：
+- `fileName`
+- `cardTitle`
+- `category`
+- `sourceName`
+- `publishedAt`
+- `url`
+- `generatedAt`
+- `newsWindowStart`
+- `newsWindowEnd`
+- `pageIndex`
+- `pageTotal`
+- `type`
+
+如果 `type` 是 `empty-state`，说明这是“本轮未抓取到新闻”的提示卡。  
+你可以通过 `url` 验证每张图对应的原文链接。
+
+## 为什么本地图片不能直接推送微信
+
+PushPlus HTML 里使用：
+
+```html
+<img src="https://..." />
+```
+
+微信只能加载公网 HTTPS 图片。你电脑上的 `C:\...card-1.png` 对微信不可访问，所以正式推送需要先发布到 GitHub Pages。
+
+本地没有 `PUBLIC_BASE_URL` 时，即使 `ENABLE_PUSH=true`，也只生成图片并提示：
+
+```text
+图片已生成，但未配置 PUBLIC_BASE_URL，跳过 PushPlus 推送。
+```
+
+## PUBLIC_BASE_URL
+
+推荐填 GitHub Pages 根地址：
 
 ```bash
 PUBLIC_BASE_URL=https://YOUR_USERNAME.github.io/YOUR_REPO
 ```
 
-程序会自动拼出：
+系统会拼出：
 
 ```text
 https://YOUR_USERNAME.github.io/YOUR_REPO/cards/<filename>.png
 ```
 
-如果你更想直接填 cards 目录，也支持：
+也可以直接填 cards 目录：
 
 ```bash
 PUBLIC_BASE_URL=https://YOUR_USERNAME.github.io/YOUR_REPO/cards
 ```
 
-程序会自动拼出：
+## PushPlus
+
+单独测试 PushPlus，不抓新闻、不调用 DeepSeek：
+
+```powershell
+npm run test:pushplus
+```
+
+正式推送默认最多 8 张图，标题：
 
 ```text
-https://YOUR_USERNAME.github.io/YOUR_REPO/cards/<filename>.png
+过去2小时新闻卡片｜{生成时间}
 ```
+
+内容使用 HTML `<img>` 标签，并附备用链接。
 
 ## GitHub Pages 设置
 
-在 GitHub 仓库中：
+在 GitHub 仓库：
 
 1. 打开 `Settings`。
 2. 进入 `Pages`。
 3. `Build and deployment` 的 `Source` 选择 `GitHub Actions`。
 4. 保存。
-
-之后 `.github/workflows/news.yml` 会负责构建 `web/` 并发布到 Pages。
 
 ## GitHub Secrets 和 Variables
 
@@ -251,77 +260,80 @@ https://YOUR_USERNAME.github.io/YOUR_REPO/cards/<filename>.png
 Settings -> Secrets and variables -> Actions
 ```
 
-Secrets 推荐配置：
+Secrets：
 
-- `DEEPSEEK_API_KEY`: 你的 DeepSeek API Key
-- `PUSHPLUS_TOKEN`: 你的 PushPlus Token
-- `PUBLIC_BASE_URL`: 例如 `https://YOUR_USERNAME.github.io/YOUR_REPO`
-- `OPENAI_API_KEY`: 可选，仅 `LLM_PROVIDER=openai` 时需要
+- `DEEPSEEK_API_KEY`
+- `PUSHPLUS_TOKEN`
+- `PUBLIC_BASE_URL`
+- `OPENAI_API_KEY`，可选
 
-Variables 可选配置：
+Variables：
 
-- `LLM_PROVIDER`: workflow 已固定为 `deepseek`，通常不需要配置
-- `DEEPSEEK_BASE_URL`: 默认 `https://api.deepseek.com`
-- `DEEPSEEK_MODEL`: 默认 `deepseek-v4-flash`
-- `NEWS_RSS_URLS`: 逗号分隔 RSS 源
-- `NEWS_KEYWORDS`: 逗号分隔关键词
+- `NEWS_RSS_URLS`，可选
+- `NEWS_KEYWORDS`，可选
+- `DEEPSEEK_MODEL`，可选
+- `DEEPSEEK_BASE_URL`，可选
 
-不要把 `.env` 上传到 GitHub。只把密钥填到 GitHub Secrets。
-
-注意：本机 `.env` 不会影响 GitHub Actions。云端运行时只读取 `.github/workflows/news.yml` 里的 `env`、GitHub Secrets 和 GitHub Variables。workflow 里已经明确设置：
+注意：本机 `.env` 不会影响 GitHub Actions。云端必须在 `.github/workflows/news.yml`、GitHub Secrets 或 GitHub Variables 中单独配置。workflow 已明确设置：
 
 ```yaml
 MOCK_MODE: "false"
 ENABLE_PUSH: "true"
 LLM_PROVIDER: deepseek
+NEWS_LOOKBACK_HOURS: "2"
+MAX_NEWS_CARDS: "8"
 ```
 
-如果你在本机 `.env` 里写了 `MOCK_MODE=true`，它只影响本机，不会让云端 Actions 使用 mock 新闻。
+## GitHub Actions
 
-## GitHub Actions 自动运行
+`.github/workflows/news.yml` 支持：
 
-`.github/workflows/news.yml` 已配置：
+- 每 2 小时自动运行
+- `workflow_dispatch` 手动运行
 
-```yaml
-schedule:
-  - cron: "0 */2 * * *"
-```
+手动运行：
 
-它会每 2 小时运行一次真实新闻流程：
-
-1. 安装依赖。
-2. 打印安全配置检查：`MOCK_MODE`、`ENABLE_PUSH`、`LLM_PROVIDER`、`PUBLIC_BASE_URL` 是否存在。
-3. 抓取过去 2 小时真实新闻。
-4. 调用 DeepSeek 总结。
-5. 生成 PNG。
-6. 写入 `web/public/cards/cards.json`。
-7. 构建 `web/` PWA。
-8. 发布到 GitHub Pages。
-9. 用 GitHub Pages 图片 HTTPS 链接调用 PushPlus。
-
-真实模式下不会 fallback 到 mock 数据。如果 `MOCK_MODE=false` 但没有抓到新闻，任务会停止并输出：
-
-```text
-真实模式未抓到足够新闻，已停止生成，避免生成虚假新闻。
-```
-
-手动触发测试：
-
-1. 打开 GitHub 仓库的 `Actions`。
+1. 打开 GitHub 仓库 `Actions`。
 2. 选择 `Generate news cards`。
 3. 点击 `Run workflow`。
-4. 等待 `Deploy GitHub Pages` 完成。
-5. 查看 PushPlus / 微信是否收到图片。
+4. 选择分支并确认。
+
+每次运行会上传 artifact：
+
+- `output/raw-news.json`
+- `output/selected-news.json`
+- `output/*.png`
+
+可以在 Actions run 页面下载 artifact，核验新闻来源和图片。
+
+## GitHub Actions 日志
+
+日志会打印：
+
+- `MOCK_MODE`
+- `NEWS_LOOKBACK_HOURS`
+- `MAX_NEWS_CARDS`
+- 当前 UTC 时间
+- 过去 2 小时起止时间
+- RSS 源数量
+- 每个 RSS 源抓到多少条
+- 时间过滤后剩多少条
+- 去重后剩多少条
+- 最终入选多少条
+- 最终生成多少张图片
+- 是否推送 PushPlus
+
+不会打印任何 API Key 或 Token。
 
 ## PWA 本地预览
 
-先生成一次卡片：
+先生成卡片：
 
 ```powershell
 npm run generate:mock
 ```
 
-再启动 PWA：
+再启动网页：
 
 ```powershell
 cd web
@@ -329,30 +341,4 @@ npm install
 npm run dev
 ```
 
-PWA 会读取 `/cards/cards.json`，展示最近生成的历史卡片，支持按日期筛选和点击查看高清大图。
-
-iPhone Safari 添加到主屏幕：
-
-1. 打开部署后的 GitHub Pages 网页。
-2. 点击分享按钮。
-3. 选择“添加到主屏幕”。
-
-## LLM 错误排查
-
-真实运行时，如果 LLM API 出错，程序会尽量打印清晰原因：
-
-- API Key 缺失或无效：检查 `DEEPSEEK_API_KEY` 或 `OPENAI_API_KEY`
-- 余额不足或额度不可用：检查 DeepSeek / OpenAI 后台余额和账单
-- `429` 限流：稍后重试，或降低运行频率
-- 模型名错误：检查 `DEEPSEEK_MODEL` 或 `OPENAI_MODEL`
-- 接口地址错误：检查 `DEEPSEEK_BASE_URL`
-
-## TODO 需要你自己填写或操作
-
-- `DEEPSEEK_API_KEY`: `.env` 或 GitHub Secrets
-- `PUSHPLUS_TOKEN`: `.env` 或 GitHub Secrets
-- `PUBLIC_BASE_URL`: GitHub Pages 地址
-- GitHub Pages Source 设置为 GitHub Actions
-- PushPlus 微信扫码登录或绑定
-- GitHub Secrets 配置
-- 任何付款、账号安全、隐私权限授权
+PWA 读取 `/cards/cards.json`，展示历史新闻卡片，支持按日期筛选和点击查看高清大图。

@@ -1,29 +1,38 @@
 {
-  "updatedAt": "2026-05-10T18:10:27.377Z",
+  "updatedAt": "2026-05-10T19:49:08.751Z",
   "runs": [
     {
-      "id": "20260510T181027Z",
-      "generatedAt": "2026-05-10T18:10:27.377Z",
-      "rangeStart": "2026-05-10T16:10:27.377Z",
-      "rangeEnd": "2026-05-10T18:10:27.377Z",
+      "id": "20260510T194908Z",
+      "generatedAt": "2026-05-10T19:49:08.751Z",
+      "rangeStart": "2026-05-10T17:49:08.751Z",
+      "rangeEnd": "2026-05-10T19:49:08.751Z",
       "images": [
-        "/cards/20260510T181027Z-card-1.png",
-        "/cards/20260510T181027Z-card-2.png",
-        "/cards/20260510T181027Z-card-3.png",
-        "/cards/20260510T181027Z-card-4.png",
-        "/cards/20260510T181027Z-card-5.png"
+        "/cards/20260510T194908Z-card-1.png"
       ],
       "sources": [
-        "Bloomberg",
+        "系统提示"
+      ]
+    },
+    {
+      "id": "20260510T194830Z",
+      "generatedAt": "2026-05-10T19:48:30.421Z",
+      "rangeStart": "2026-05-10T17:48:30.421Z",
+      "rangeEnd": "2026-05-10T19:48:30.421Z",
+      "images": [
+        "/cards/20260510T194830Z-card-1.png",
+        "/cards/20260510T194830Z-card-2.png",
+        "/cards/20260510T194830Z-card-3.png",
+        "/cards/20260510T194830Z-card-4.png",
+        "/cards/20260510T194830Z-card-5.png",
+        "/cards/20260510T194830Z-card-6.png"
+      ],
+      "sources": [
         "TechCrunch",
-        "Reuters",
+        "Bloomberg",
         "Financial Times",
-        "机器之心",
-        "Hugging Face",
-        "财新",
+        "Reuters",
         "The Verge",
-        "CNBC",
-        "证券时报"
+        "机器之心"
       ]
     }
   ]

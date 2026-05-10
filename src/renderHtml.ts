@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { CardBrief, RenderPayload } from "./types.js";
+import type { CardData, RenderPayload } from "./types.js";
 
 export async function renderHtml(payload: RenderPayload): Promise<string[]> {
   const [template, css] = await Promise.all([
@@ -15,13 +15,18 @@ export async function renderHtml(payload: RenderPayload): Promise<string[]> {
   );
 }
 
-function toCardView(payload: RenderPayload, card: CardBrief, index: number) {
+function toCardView(payload: RenderPayload, card: CardData, index: number) {
+  const pageTotal = payload.cards.length;
   return {
     ...card,
-    page: `${index + 1}/${payload.cards.length}`,
+    cardTitle: card.titleZh,
+    page: `${index + 1}/${pageTotal}`,
+    pageIndex: index + 1,
+    pageTotal,
     range: `${formatDateTime(payload.rangeStart)} - ${formatDateTime(payload.rangeEnd)}`,
     generatedAt: formatDateTime(payload.generatedAt),
-    sources: payload.sources.slice(0, 6).join(" / ") || "RSS",
+    publishedAtText: card.publishedAt ? formatDateTime(card.publishedAt) : "本轮无新闻",
+    shortUrl: card.url ? shortUrl(card.url) : "无原文链接",
     accent: pickAccent(index)
   };
 }
@@ -32,11 +37,13 @@ function pickAccent(index: number) {
     { main: "#4aa3ff", secondary: "#a86bff" },
     { main: "#a86bff", secondary: "#28f5a6" },
     { main: "#32d3ff", secondary: "#28f5a6" },
-    { main: "#b37dff", secondary: "#32d3ff" }
-  ][index % 5];
+    { main: "#b37dff", secondary: "#32d3ff" },
+    { main: "#28f5a6", secondary: "#b37dff" }
+  ][index % 6];
 }
 
 function formatDateTime(value: string): string {
+  if (!value) return "";
   return new Intl.DateTimeFormat("zh-CN", {
     month: "2-digit",
     day: "2-digit",
@@ -45,4 +52,13 @@ function formatDateTime(value: string): string {
     hour12: false,
     timeZone: "Asia/Shanghai"
   }).format(new Date(value));
+}
+
+function shortUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.hostname}${url.pathname === "/" ? "" : url.pathname}`.slice(0, 54);
+  } catch {
+    return value.slice(0, 54);
+  }
 }

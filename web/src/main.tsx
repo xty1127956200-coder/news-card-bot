@@ -6,23 +6,26 @@ import "./styles.css";
 type CardRun = {
   id: string;
   generatedAt: string;
-  rangeStart: string;
-  rangeEnd: string;
+  newsWindowStart: string;
+  newsWindowEnd: string;
   cards: CardRecord[];
-  sources: string[];
 };
 
 type CardRecord = {
+  type?: "news" | "empty-state";
   runId: string;
   fileName: string;
-  title: string;
-  generatedAt: string;
-  rangeStart: string;
-  rangeEnd: string;
+  cardTitle: string;
   category: string;
-  page: string;
-  sources: string[];
-  url?: string;
+  sourceName: string;
+  publishedAt: string;
+  url: string;
+  generatedAt: string;
+  newsWindowStart: string;
+  newsWindowEnd: string;
+  pageIndex: number;
+  pageTotal: number;
+  imageUrl?: string;
 };
 
 type CardsJson = {
@@ -103,15 +106,15 @@ function App() {
             <div className="runMeta">
               <div>
                 <h2>{formatDateTime(run.generatedAt)}</h2>
-                <p>{formatDateTime(run.rangeStart)} - {formatDateTime(run.rangeEnd)}</p>
+                <p>{formatDateTime(run.newsWindowStart)} - {formatDateTime(run.newsWindowEnd)}</p>
               </div>
               <span>{run.cards.length} 张</span>
             </div>
             <div className="cards">
               {run.cards.map((card, index) => (
-                <button className="thumb" key={card.fileName} onClick={() => setActiveImage(card.url ?? card.fileName)} aria-label={`查看第 ${index + 1} 张`}>
-                  <img src={toPublicImageUrl(card.url ?? card.fileName)} alt={card.title} loading="lazy" />
-                  <span><Maximize2 size={16} /> {card.page}</span>
+                <button className="thumb" key={card.fileName} onClick={() => setActiveImage(card.imageUrl ?? card.fileName)} aria-label={`查看第 ${index + 1} 张`}>
+                  <img src={toPublicImageUrl(card.imageUrl ?? card.fileName)} alt={card.cardTitle} loading="lazy" />
+                  <span><Maximize2 size={16} /> {card.pageIndex}/{card.pageTotal}</span>
                 </button>
               ))}
             </div>
@@ -149,15 +152,14 @@ function groupCards(cards: CardRecord[]): CardRun[] {
   }
 
   return [...grouped.entries()].map(([id, runCards]) => {
-    const sorted = runCards.sort((a, b) => Number(a.page.split("/")[0]) - Number(b.page.split("/")[0]));
+    const sorted = runCards.sort((a, b) => a.pageIndex - b.pageIndex);
     const first = sorted[0];
     return {
       id,
       generatedAt: first.generatedAt,
-      rangeStart: first.rangeStart,
-      rangeEnd: first.rangeEnd,
+      newsWindowStart: first.newsWindowStart,
+      newsWindowEnd: first.newsWindowEnd,
       cards: sorted,
-      sources: first.sources
     };
   });
 }

@@ -16,55 +16,54 @@
       root.style.setProperty("--accent", data.accent.main);
       root.style.setProperty("--accent-2", data.accent.secondary);
       root.innerHTML = `
-        <section class="shell">
+        <section class="shell ${data.type === "empty-state" ? "emptyState" : ""}">
           <header class="topbar">
-            <div>
-              <p class="eyebrow">PAST 2 HOURS SIGNAL</p>
-              <h1>${escapeHtml(data.category)}</h1>
+            <div class="labelGroup">
+              <span class="category">${escapeHtml(data.category)}</span>
+              <span class="window">过去2小时</span>
             </div>
-            <div class="badge">${escapeHtml(data.page)}</div>
+            <div class="page">${escapeHtml(data.page)}</div>
           </header>
 
           <section class="hero">
             <div class="pulse"></div>
-            <p class="label">主线判断</p>
-            <h2>${escapeHtml(data.headline)}</h2>
-            <p class="insight">${escapeHtml(data.insight)}</p>
+            <p class="sourceLine">${escapeHtml(data.sourceName)} · ${escapeHtml(data.publishedAtText)}</p>
+            <h1>${escapeHtml(data.cardTitle)}</h1>
           </section>
 
-          <section class="grid">
-            <div class="panel lead">
-              <div class="panel-title">核心要点</div>
+          <section class="content">
+            <div class="panel summary">
+              <p class="panelTitle">核心摘要</p>
+              <p>${escapeHtml(data.summary)}</p>
+            </div>
+
+            <div class="panel facts">
+              <p class="panelTitle">关键事实</p>
               <ul>
-                ${data.bullets.map((item, index) => `<li><span>0${index + 1}</span>${escapeHtml(item)}</li>`).join("")}
+                ${data.facts.map((fact, index) => `<li><span>0${index + 1}</span>${escapeHtml(fact)}</li>`).join("")}
               </ul>
             </div>
 
-            <div class="panel tape">
-              <div class="panel-title">新闻样本</div>
-              ${data.related.map((item) => `
-                <article>
-                  <time>${escapeHtml(item.time)}</time>
-                  <h3>${escapeHtml(item.title)}</h3>
-                  <p>${escapeHtml(item.source)}</p>
-                </article>
-              `).join("")}
+            <div class="panel why">
+              <p class="panelTitle">为什么重要</p>
+              <p>${escapeHtml(data.whyItMatters)}</p>
             </div>
           </section>
 
           <footer>
             <div class="meta">
+              <span>来源 ${escapeHtml(data.sourceName)}</span>
+              <span>发布时间 ${escapeHtml(data.publishedAtText)}</span>
+              <span>原文 ${escapeHtml(data.shortUrl)}</span>
               <span>范围 ${escapeHtml(data.range)}</span>
               <span>生成 ${escapeHtml(data.generatedAt)}</span>
-              <span>来源 ${escapeHtml(data.sources)}</span>
             </div>
-            <div class="progress">${progressBars(data.page)}</div>
+            <div class="progress">${progressBars(data.pageIndex, data.pageTotal)}</div>
           </footer>
         </section>
       `;
 
-      function progressBars(pageText) {
-        const [current, total] = pageText.split("/").map(Number);
+      function progressBars(current, total) {
         return Array.from({ length: total }, (_, index) => {
           return `<i class="${index + 1 <= current ? "active" : ""}"></i>`;
         }).join("");

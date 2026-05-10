@@ -1,19 +1,23 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { buildPublicImageUrl, config } from "./config.js";
-import type { RenderPayload } from "./types.js";
+import type { CardData, RenderPayload } from "./types.js";
 
 export type PublishedCard = {
+  type: "news" | "empty-state";
   runId: string;
   fileName: string;
-  title: string;
-  generatedAt: string;
-  rangeStart: string;
-  rangeEnd: string;
+  cardTitle: string;
   category: string;
-  page: string;
-  sources: string[];
-  url?: string;
+  sourceName: string;
+  publishedAt: string;
+  url: string;
+  generatedAt: string;
+  newsWindowStart: string;
+  newsWindowEnd: string;
+  pageIndex: number;
+  pageTotal: number;
+  imageUrl?: string;
 };
 
 export type PublishResult = {
@@ -31,32 +35,23 @@ export async function uploadImages(imagePaths: string[], runId: string, payload:
   const imageUrls: string[] = [];
   const localImagePaths: string[] = [];
   const records: PublishedCard[] = [];
+  const pageTotal = imagePaths.length;
+
   for (let pageIndex = 0; pageIndex < imagePaths.length; pageIndex += 1) {
     const imagePath = imagePaths[pageIndex];
     const originalFileName = path.basename(imagePath);
     const pageFileName = `${runId}-card-${pageIndex + 1}.png`;
     const localPublicPath = path.join(publicDir, originalFileName);
     const webPublicPath = path.join(webCardsDir, pageFileName);
-    const url = buildPublicImageUrl(pageFileName);
+    const imageUrl = buildPublicImageUrl(pageFileName);
     const card = payload.cards[pageIndex];
 
     await fs.copyFile(imagePath, localPublicPath);
     await fs.copyFile(imagePath, webPublicPath);
 
-    imageUrls.push(url ?? webPublicPath);
+    imageUrls.push(imageUrl ?? webPublicPath);
     localImagePaths.push(webPublicPath);
-    records.push({
-      runId,
-      fileName: pageFileName,
-      title: card?.headline ?? `新闻卡片 ${pageIndex + 1}`,
-      generatedAt: payload.generatedAt,
-      rangeStart: payload.rangeStart,
-      rangeEnd: payload.rangeEnd,
-      category: card?.category ?? "未分类",
-      page: `${pageIndex + 1}/${imagePaths.length}`,
-      sources: payload.sources,
-      url
-    });
+    records.push(toPublishedCard(card, runId, pageFileName, payload, pageIndex + 1, pageTotal, imageUrl));
   }
 
   await writeCardsJson(webCardsDir, records);
@@ -69,12 +64,39 @@ export async function uploadImages(imagePaths: string[], runId: string, payload:
   };
 }
 
+function toPublishedCard(
+  card: CardData,
+  runId: string,
+  fileName: string,
+  payload: RenderPayload,
+  pageIndex: number,
+  pageTotal: number,
+  imageUrl: string | undefined
+): PublishedCard {
+  return {
+    type: card.type,
+    runId,
+    fileName,
+    cardTitle: card.titleZh,
+    category: card.category,
+    sourceName: card.sourceName,
+    publishedAt: card.publishedAt,
+    url: card.url,
+    generatedAt: payload.generatedAt,
+    newsWindowStart: payload.rangeStart,
+    newsWindowEnd: payload.rangeEnd,
+    pageIndex,
+    pageTotal,
+    imageUrl
+  };
+}
+
 async function writeCardsJson(cardsDir: string, records: PublishedCard[]) {
   const cardsJsonPath = path.join(cardsDir, "cards.json");
   let previous: PublishedCard[] = [];
   try {
     const existing = JSON.parse(await fs.readFile(cardsJsonPath, "utf8")) as { cards?: PublishedCard[] };
-    previous = existing.cards ?? [];
+    previous = (existing.cards ?? []).filter(isPublishedCard);
   } catch {
     previous = [];
   }
@@ -101,19 +123,19 @@ async function writeLegacyManifest(cardsDir: string) {
   const cardsJson = JSON.parse(await fs.readFile(cardsJsonPath, "utf8")) as { updatedAt?: string; cards?: PublishedCard[] };
   const grouped = new Map<string, PublishedCard[]>();
   for (const card of cardsJson.cards ?? []) {
-    grouped.set(card.runId, [...(grouped.get(card.runId) ?? []), card]);
+    if (isPublishedCard(card)) grouped.set(card.runId, [...(grouped.get(card.runId) ?? []), card]);
   }
 
   const runs = [...grouped.entries()].map(([runId, cards]) => {
-    const sorted = cards.sort((a, b) => Number(a.page.split("/")[0]) - Number(b.page.split("/")[0]));
+    const sorted = cards.sort((a, b) => a.pageIndex - b.pageIndex);
     const first = sorted[0];
     return {
       id: runId,
       generatedAt: first.generatedAt,
-      rangeStart: first.rangeStart,
-      rangeEnd: first.rangeEnd,
+      rangeStart: first.newsWindowStart,
+      rangeEnd: first.newsWindowEnd,
       images: sorted.map((card) => `/cards/${card.fileName}`),
-      sources: first.sources
+      sources: [...new Set(sorted.map((card) => card.sourceName).filter(Boolean))]
     };
   });
 
@@ -129,4 +151,9 @@ async function writeLegacyManifest(cardsDir: string) {
     ),
     "utf8"
   );
+}
+
+function isPublishedCard(value: unknown): value is PublishedCard {
+  const card = value as Partial<PublishedCard>;
+  return Boolean(card?.fileName && card.cardTitle && card.generatedAt && card.newsWindowStart && card.newsWindowEnd);
 }

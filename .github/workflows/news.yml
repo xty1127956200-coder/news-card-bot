@@ -21,6 +21,8 @@ jobs:
       MOCK_MODE: "false"
       ENABLE_PUSH: "true"
       LLM_PROVIDER: deepseek
+      NEWS_LOOKBACK_HOURS: "2"
+      MAX_NEWS_CARDS: "8"
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
       DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
@@ -51,6 +53,11 @@ jobs:
           echo "MOCK_MODE=${MOCK_MODE}"
           echo "ENABLE_PUSH=${ENABLE_PUSH}"
           echo "LLM_PROVIDER=${LLM_PROVIDER}"
+          echo "NEWS_LOOKBACK_HOURS=${NEWS_LOOKBACK_HOURS}"
+          echo "MAX_NEWS_CARDS=${MAX_NEWS_CARDS}"
+          echo "CURRENT_UTC=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "NEWS_WINDOW_START_UTC=$(date -u -d "-${NEWS_LOOKBACK_HOURS} hours" +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "NEWS_WINDOW_END_UTC=$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           if [ -n "${PUBLIC_BASE_URL}" ]; then
             echo "PUBLIC_BASE_URL_EXISTS=true"
           else
@@ -59,6 +66,17 @@ jobs:
 
       - name: Generate cards
         run: npm run generate
+
+      - name: Upload verification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: news-verification-output
+          path: |
+            output/raw-news.json
+            output/selected-news.json
+            output/*.png
+          if-no-files-found: warn
 
       - name: Commit generated card history
         uses: stefanzweifel/git-auto-commit-action@v5

@@ -1,10 +1,28 @@
 import OpenAI from "openai";
-import { cardCategories, config, getLlmConfig } from "./config.js";
-import type { CardBrief, NewsItem } from "./types.js";
+import { config, getLlmConfig } from "./config.js";
+import type { NewsCategory, NewsItem, SelectedNewsItem } from "./types.js";
 
-export async function summarizeCards(groups: Map<string, NewsItem[]>): Promise<CardBrief[]> {
+type SummaryResponse = {
+  titleZh?: string;
+  summary?: string;
+  facts?: string[];
+  whyItMatters?: string;
+  category?: string;
+};
+
+const allowedCategories: Array<Exclude<NewsCategory, "提示">> = ["AI", "芯片", "市场", "公司", "政策", "国际"];
+
+export async function summarizeNewsItems(items: NewsItem[]): Promise<SelectedNewsItem[]> {
+  const results: SelectedNewsItem[] = [];
+  for (const item of items) {
+    results.push(await summarizeOneNews(item));
+  }
+  return results;
+}
+
+async function summarizeOneNews(item: NewsItem): Promise<SelectedNewsItem> {
   if (config.MOCK_MODE) {
-    return fallbackSummaries(groups);
+    return fallbackSummary(item);
   }
 
   const llm = getLlmConfig();
@@ -21,90 +39,95 @@ export async function summarizeCards(groups: Map<string, NewsItem[]>): Promise<C
     baseURL: llm.baseURL
   });
 
-  const input = cardCategories.map((category) => ({
-    category,
-    news: (groups.get(category) ?? []).map((item) => ({
-      title: item.title,
-      source: item.source,
-      publishedAt: item.publishedAt,
-      summary: item.summary
-    }))
-  }));
-
   try {
     const response = await client.chat.completions.create({
       model: llm.model,
-      temperature: 0.4,
+      temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: "你是中文科技与财经新闻编辑。请输出严格 JSON，不要 Markdown。"
+          content:
+            "你是中文新闻编辑。你只能总结用户提供的单条 RSS 新闻字段，不允许添加输入中没有的事实、数字、公司、事件或结论。输出严格 JSON，不要 Markdown。"
         },
         {
           role: "user",
-          content: `基于过去2小时新闻，为每个有新闻的分类生成资讯卡片文案。要求：中文、克制、信息密度高、不要编造事实。JSON 格式：{"cards":[{"category":"...","headline":"不超过24字","insight":"80字以内洞察","bullets":["每条不超过38字，3-5条"],"related":[{"title":"...","source":"...","time":"HH:mm"}]}]}。输入：${JSON.stringify(input)}`
+          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。若信息不足，相关字段写“信息不足，需等待更多来源确认。”。分类只能从 AI、芯片、市场、公司、政策、国际 中选一个。输出 JSON：{"titleZh":"","summary":"","facts":["","",""],"whyItMatters":"","category":""}。输入新闻：${JSON.stringify({
+            originalTitle: item.originalTitle,
+            sourceName: item.sourceName,
+            publishedAt: item.publishedAt,
+            url: item.url,
+            rssSummary: item.rssSummary ?? "",
+            suggestedCategory: item.category ?? "国际"
+          })}`
         }
       ]
     });
 
     const content = response.choices[0]?.message.content ?? "{}";
-    const parsed = JSON.parse(content) as { cards?: CardBrief[] };
-    return normalizeCards(parsed.cards ?? [], groups);
+    const parsed = JSON.parse(content) as SummaryResponse;
+    return normalizeSummary(item, parsed);
   } catch (error) {
     throw new Error(formatLlmError(error, llm));
   }
 }
 
-function fallbackSummaries(groups: Map<string, NewsItem[]>): CardBrief[] {
-  return normalizeCards(
-    cardCategories.map((category) => {
-      const news = groups.get(category) ?? [];
-      const top = news[0];
-      return {
-        category,
-        headline: top?.title.slice(0, 24) || `${category}暂无重点更新`,
-        insight: top
-          ? `过去2小时，${category}的关键变化集中在产业节奏、监管信号与市场预期的再定价。`
-          : "当前时间窗内可用新闻较少，建议继续观察下一轮更新。",
-        bullets: news.slice(0, 5).map((item) => item.title.slice(0, 38)),
-        related: news.slice(0, 3).map((item) => ({
-          title: item.title,
-          source: item.source,
-          time: formatTime(item.publishedAt)
-        }))
-      };
-    }),
-    groups
-  );
+function fallbackSummary(item: NewsItem): SelectedNewsItem {
+  const category = normalizeCategory(item.category);
+  return {
+    type: "news",
+    id: item.id,
+    originalTitle: item.originalTitle,
+    sourceName: item.sourceName,
+    publishedAt: item.publishedAt,
+    url: item.url,
+    fetchedAt: item.fetchedAt,
+    category,
+    titleZh: item.originalTitle.slice(0, 48),
+    summary: item.rssSummary || "信息不足，需等待更多来源确认。",
+    facts: [
+      `来源：${item.sourceName}`,
+      `发布时间：${formatDateTime(item.publishedAt)}`,
+      item.rssSummary ? item.rssSummary.slice(0, 42) : "信息不足，需等待更多来源确认。"
+    ],
+    whyItMatters: "信息不足，需等待更多来源确认。",
+    score: item.score,
+    rssSummary: item.rssSummary
+  };
 }
 
-function normalizeCards(cards: CardBrief[], groups: Map<string, NewsItem[]>): CardBrief[] {
-  return cards
-    .filter((card) => cardCategories.includes(card.category))
-    .map((card) => {
-      const related = card.related?.length
-        ? card.related
-        : (groups.get(card.category) ?? []).slice(0, 3).map((item) => ({
-            title: item.title,
-            source: item.source,
-            time: formatTime(item.publishedAt)
-          }));
+function normalizeSummary(item: NewsItem, parsed: SummaryResponse): SelectedNewsItem {
+  const fallback = "信息不足，需等待更多来源确认。";
+  const category = normalizeCategory(parsed.category || item.category);
+  const facts = Array.isArray(parsed.facts) ? parsed.facts.filter(Boolean).slice(0, 3) : [];
+  while (facts.length < 2) facts.push(fallback);
 
-      return {
-        category: card.category,
-        headline: card.headline || card.category,
-        insight: card.insight || "本轮新闻变化仍在发酵，需结合后续事实继续观察。",
-        bullets: (card.bullets ?? []).slice(0, 5),
-        related: related.slice(0, 3)
-      };
-    })
-    .filter((card) => card.bullets.length > 0 || card.related.length > 0)
-    .slice(0, 5);
+  return {
+    type: "news",
+    id: item.id,
+    originalTitle: item.originalTitle,
+    sourceName: item.sourceName,
+    publishedAt: item.publishedAt,
+    url: item.url,
+    fetchedAt: item.fetchedAt,
+    category,
+    titleZh: (parsed.titleZh || item.originalTitle).slice(0, 80),
+    summary: parsed.summary || fallback,
+    facts,
+    whyItMatters: parsed.whyItMatters || fallback,
+    score: item.score,
+    rssSummary: item.rssSummary
+  };
 }
 
-function formatTime(value: string): string {
+function normalizeCategory(value: unknown): Exclude<NewsCategory, "提示"> {
+  return allowedCategories.includes(value as Exclude<NewsCategory, "提示">) ? (value as Exclude<NewsCategory, "提示">) : "国际";
+}
+
+function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,

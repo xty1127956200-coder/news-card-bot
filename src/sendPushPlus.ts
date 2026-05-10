@@ -1,11 +1,12 @@
 import { config } from "./config.js";
 
 export async function sendPushPlus(imageUrls: string[], generatedAt: string): Promise<void> {
+  const urls = imageUrls.slice(0, Math.min(config.MAX_NEWS_CARDS, 12));
   if (!config.ENABLE_PUSH) {
     console.log("ENABLE_PUSH=false, skip PushPlus.");
     return;
   }
-  if (!imageUrls.every((url) => url.startsWith("https://"))) {
+  if (!urls.every((url) => url.startsWith("https://"))) {
     console.log("图片已生成，但未配置 PUBLIC_BASE_URL，跳过 PushPlus 推送。");
     return;
   }
@@ -15,9 +16,9 @@ export async function sendPushPlus(imageUrls: string[], generatedAt: string): Pr
 
   const title = `过去2小时新闻卡片｜${formatDateTime(generatedAt)}`;
   const content = [
-    ...imageUrls.map((url) => `<p><img src="${escapeHtml(url)}" style="width:100%;max-width:720px;" /></p>`),
+    ...urls.map((url) => `<p><img src="${escapeHtml(url)}" style="width:100%;max-width:720px;" /></p>`),
     "<hr />",
-    ...imageUrls.map((url, index) => `<p>备用链接 ${index + 1}: <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`)
+    ...urls.map((url, index) => `<p>备用链接 ${index + 1}: <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`)
   ].join("\n");
 
   const response = await fetch("https://www.pushplus.plus/send", {
