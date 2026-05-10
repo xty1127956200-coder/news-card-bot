@@ -12,7 +12,7 @@ type CardRun = {
 };
 
 type CardRecord = {
-  type?: "news" | "empty-state";
+  type?: "single" | "brief" | "news" | "empty-state";
   runId: string;
   fileName: string;
   cardTitle: string;

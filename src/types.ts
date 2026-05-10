@@ -39,8 +39,39 @@ export type SelectedNewsItem = {
   keyPoints: string[];
   whyItMatters: string[];
   informationLimit: string;
+  cardId?: string;
+  cardType?: "single" | "brief";
+  cardItemIndex?: number;
   score?: number;
   rssSummary?: string;
+};
+
+export type SingleNewsCard = Omit<SelectedNewsItem, "type"> & {
+  type: "single";
+  cardId: string;
+  cardType: "single";
+};
+
+export type BriefNewsItem = Pick<
+  SelectedNewsItem,
+  "id" | "originalTitle" | "sourceName" | "publishedAt" | "url" | "titleZh" | "keyPoints" | "informationLimit" | "category"
+> & {
+  cardItemIndex: number;
+};
+
+export type BriefNewsCard = {
+  type: "brief";
+  cardId: string;
+  cardType: "brief";
+  category: Exclude<NewsCategory, "提示">;
+  titleZh: string;
+  keyPoints: string[];
+  whyItMatters: string[];
+  informationLimit: string;
+  sourceName: string;
+  publishedAt: string;
+  url: string;
+  items: BriefNewsItem[];
 };
 
 export type EmptyStateCard = {
@@ -55,7 +86,7 @@ export type EmptyStateCard = {
   url: string;
 };
 
-export type CardData = SelectedNewsItem | EmptyStateCard;
+export type CardData = SingleNewsCard | BriefNewsCard | EmptyStateCard;
 
 export type RenderPayload = {
   generatedAt: string;

@@ -4,7 +4,7 @@ import { buildPublicImageUrl, config } from "./config.js";
 import type { CardData, RenderPayload } from "./types.js";
 
 export type PublishedCard = {
-  type: "news" | "empty-state";
+  type: "single" | "brief" | "empty-state" | "news";
   runId: string;
   fileName: string;
   cardTitle: string;
@@ -18,6 +18,13 @@ export type PublishedCard = {
   pageIndex: number;
   pageTotal: number;
   imageUrl?: string;
+  items?: Array<{
+    titleZh: string;
+    sourceName: string;
+    publishedAt: string;
+    url: string;
+    keyPoints: string[];
+  }>;
 };
 
 export type PublishResult = {
@@ -73,7 +80,7 @@ function toPublishedCard(
   pageTotal: number,
   imageUrl: string | undefined
 ): PublishedCard {
-  return {
+  const base = {
     type: card.type,
     runId,
     fileName,
@@ -88,6 +95,21 @@ function toPublishedCard(
     pageIndex,
     pageTotal,
     imageUrl
+  };
+
+  if (card.type !== "brief") {
+    return base;
+  }
+
+  return {
+    ...base,
+    items: card.items.map((item) => ({
+      titleZh: item.titleZh,
+      sourceName: item.sourceName,
+      publishedAt: item.publishedAt,
+      url: item.url,
+      keyPoints: item.keyPoints
+    }))
   };
 }
 

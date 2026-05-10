@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { CardData, RenderPayload } from "./types.js";
+import type { BriefNewsItem, CardData, RenderPayload } from "./types.js";
 
 const INFO_LIMIT_TEXT = "信息不足，需等待更多来源确认";
 
@@ -20,17 +20,20 @@ export async function renderHtml(payload: RenderPayload): Promise<string[]> {
 function toCardView(payload: RenderPayload, card: CardData, index: number) {
   const pageTotal = payload.cards.length;
   const text = normalizeCardText(card);
+  const publishedAtText = card.publishedAt ? formatDateTime(card.publishedAt) : "本轮无新闻";
   return {
     ...card,
     ...text,
     cardTitle: card.titleZh,
+    sourceLine: card.type === "brief" ? "过去2小时短新闻精选" : `${card.sourceName} · ${publishedAtText}`,
     page: `${index + 1}/${pageTotal}`,
     pageIndex: index + 1,
     pageTotal,
     range: `${formatDateTime(payload.rangeStart)} - ${formatDateTime(payload.rangeEnd)}`,
     generatedAt: formatDateTime(payload.generatedAt),
-    publishedAtText: card.publishedAt ? formatDateTime(card.publishedAt) : "本轮无新闻",
-    shortUrl: card.url ? shortUrl(card.url) : "无原文链接",
+    publishedAtText,
+    shortUrl: card.type === "brief" ? "多条原文见 cards.json" : card.url ? shortUrl(card.url) : "无原文链接",
+    items: card.type === "brief" ? card.items.map(normalizeBriefItem) : [],
     accent: pickAccent(index)
   };
 }
@@ -47,6 +50,19 @@ function normalizeCardText(card: CardData) {
     keyPoints,
     whyItMatters,
     informationLimit
+  };
+}
+
+function normalizeBriefItem(item: BriefNewsItem) {
+  const keyPoints = dedupeTextItems(item.keyPoints ?? []).slice(0, 2);
+  const declaredLimit = String(item.informationLimit ?? "").trim();
+  const hasLimitInItems = (item.keyPoints ?? []).some(isInfoLimitSentence);
+  return {
+    ...item,
+    keyPoints,
+    informationLimit: (declaredLimit || hasLimitInItems) ? INFO_LIMIT_TEXT : "",
+    publishedAtText: item.publishedAt ? formatDateTime(item.publishedAt) : "",
+    shortUrl: item.url ? shortUrl(item.url) : "无原文链接"
   };
 }
 

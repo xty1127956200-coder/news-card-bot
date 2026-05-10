@@ -9,7 +9,8 @@ import { screenshotCards } from "./screenshot.js";
 import { summarizeNewsItems } from "./summarize.js";
 import { uploadImages } from "./uploadImage.js";
 import { sendPushPlus } from "./sendPushPlus.js";
-import type { CardData, FetchNewsResult, RawNewsItem, RenderPayload, SelectedNewsItem } from "./types.js";
+import { layoutCards } from "./layoutCards.js";
+import type { CardData, FetchNewsResult, RawNewsItem, RenderPayload } from "./types.js";
 
 async function main() {
   const now = new Date();
@@ -28,13 +29,16 @@ async function main() {
 
   const dedupedNews = dedupeNews(fetchResult.recentNews);
   const rankedNews = rankNews(dedupedNews);
-  const selectedCandidates = rankedNews.slice(0, maxCards);
-  const selectedNews = selectedCandidates.length > 0 ? await summarizeNewsItems(selectedCandidates) : [];
-  const cards: CardData[] = selectedNews.length > 0 ? selectedNews : [createEmptyStateCard()];
+  const selectedCandidates = rankedNews.slice(0, maxCards * 3);
+  const summarizedNews = selectedCandidates.length > 0 ? await summarizeNewsItems(selectedCandidates) : [];
+  const layout = layoutCards(summarizedNews, maxCards);
+  const selectedNews = layout.selectedNews;
+  const cards: CardData[] = layout.cards.length > 0 ? layout.cards : [createEmptyStateCard()];
 
   await fs.writeFile(path.resolve("output", "selected-news.json"), JSON.stringify(selectedNews, null, 2), "utf8");
   console.log(`去重后剩多少条: ${dedupedNews.length}`);
   console.log(`最终入选多少条: ${selectedNews.length}`);
+  logLayoutStats(layout.stats);
 
   const payload: RenderPayload = {
     generatedAt: now.toISOString(),
@@ -68,6 +72,17 @@ async function main() {
   console.log(publishResult.localImagePaths.join("\n"));
   console.log("Public URLs or local public paths:");
   console.log(publishResult.imageUrls.join("\n"));
+}
+
+function logLayoutStats(stats: ReturnType<typeof layoutCards>["stats"]) {
+  console.log(`信息量充足新闻数量: ${stats.sufficientNewsCount}`);
+  console.log(`短新闻数量: ${stats.shortNewsCount}`);
+  console.log(`生成单新闻卡数量: ${stats.singleCardCount}`);
+  console.log(`生成快讯卡数量: ${stats.briefCardCount}`);
+  console.log(`自动排版最终图片数量: ${stats.finalImageCount}`);
+  for (const card of stats.cardSummaries) {
+    console.log(`卡片 ${card.cardId}: type=${card.type}, category=${card.category}, items=${card.itemCount}, title=${card.title}`);
+  }
 }
 
 function logRuntimeConfig(now: Date, rangeStart: Date, maxCards: number) {

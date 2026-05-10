@@ -1,11 +1,12 @@
 # News Card Bot
 
-每 2 小时抓取过去 2 小时内的真实新闻，一条入选新闻生成一张 9:16 竖屏图片，发布到 GitHub Pages，并通过 PushPlus 推送到微信。
+每 2 小时抓取过去 2 小时内的真实新闻，按信息量自动排版成 9:16 竖屏图片，发布到 GitHub Pages，并通过 PushPlus 推送到微信。
 
 ## 当前模式
 
-- 一条新闻生成一张图片。
-- 每轮默认最多生成 `8` 张。
+- 自动排版：信息量充足的新闻生成单新闻卡，信息量较少的新闻按分类合并为快讯卡。
+- 每张快讯卡最多包含 3 条短新闻。
+- 每轮默认最多生成 `12` 张图片。
 - 时间范围固定为过去 `2` 小时，不扩大到 6 小时或更长。
 - `MOCK_MODE=false` 时绝不 fallback 到 mock 新闻。
 - 0 条可核验真实新闻时，会生成 1 张提示卡：`过去2小时未抓取到足够可核验新闻`。
@@ -77,7 +78,7 @@ DEEPSEEK_API_KEY=TODO_your_deepseek_api_key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 NEWS_LOOKBACK_HOURS=2
-MAX_NEWS_CARDS=8
+MAX_NEWS_CARDS=12
 ```
 
 更强效果可改：
@@ -117,19 +118,19 @@ NEWS_RSS_URLS=https://news.google.com/rss/search?q=OpenAI&hl=zh-CN&gl=CN&ceid=CN
 
 ## 调整生成数量
 
-默认最多 8 张：
+默认最多 12 张：
+
+```bash
+MAX_NEWS_CARDS=12
+```
+
+如果想更稳定，可以调成 8 或 6：
 
 ```bash
 MAX_NEWS_CARDS=8
 ```
 
-如果想更稳定，可以调成 6：
-
-```bash
-MAX_NEWS_CARDS=6
-```
-
-不建议默认 12，因为 DeepSeek 总结、Playwright 截图和微信加载都会变慢。程序仍保留最多 12 张的安全上限。
+`MAX_NEWS_CARDS` 控制的是最终图片数量，不是新闻条数。自动排版后，一张快讯卡可以包含 2-3 条短新闻。
 
 ## 输出文件
 
@@ -163,8 +164,11 @@ Get-Content -Encoding UTF8 output\selected-news.json
 - `keyPoints`
 - `whyItMatters`
 - `informationLimit`
+- `cardId`
+- `cardType`
+- `cardItemIndex`
 
-如果本轮 0 条新闻，`selected-news.json` 会是空数组，同时会生成 1 张提示卡。
+如果某条新闻进入快讯卡，`cardType` 会是 `brief`；如果是单新闻卡，`cardType` 会是 `single`。如果本轮 0 条新闻，`selected-news.json` 会是空数组，同时会生成 1 张提示卡。
 
 ## cards.json 核验
 
@@ -174,7 +178,7 @@ PWA 和 GitHub Pages 使用：
 web/public/cards/cards.json
 ```
 
-每张图片对应一条记录，包含：
+每张图片对应一条记录。单新闻卡 `type` 是 `single`，包含：
 
 - `fileName`
 - `cardTitle`
@@ -188,6 +192,14 @@ web/public/cards/cards.json
 - `pageIndex`
 - `pageTotal`
 - `type`
+
+快讯卡 `type` 是 `brief`，额外包含 `items`，每个 item 记录：
+
+- `titleZh`
+- `sourceName`
+- `publishedAt`
+- `url`
+- `keyPoints`
 
 如果 `type` 是 `empty-state`，说明这是“本轮未抓取到新闻”的提示卡。  
 你可以通过 `url` 验证每张图对应的原文链接。
@@ -236,7 +248,7 @@ PUBLIC_BASE_URL=https://YOUR_USERNAME.github.io/YOUR_REPO/cards
 npm run test:pushplus
 ```
 
-正式推送默认最多 8 张图，标题：
+正式推送默认最多 12 张图，标题：
 
 ```text
 过去2小时新闻卡片｜{生成时间}
@@ -304,7 +316,7 @@ MOCK_MODE: "false"
 ENABLE_PUSH: "true"
 LLM_PROVIDER: deepseek
 NEWS_LOOKBACK_HOURS: "2"
-MAX_NEWS_CARDS: "8"
+MAX_NEWS_CARDS: "12"
 ```
 
 ## GitHub Actions
@@ -343,6 +355,11 @@ MAX_NEWS_CARDS: "8"
 - 时间过滤后剩多少条
 - 去重后剩多少条
 - 最终入选多少条
+- 信息量充足新闻数量
+- 短新闻数量
+- 生成单新闻卡数量
+- 生成快讯卡数量
+- 每张卡片类型和包含新闻数量
 - 最终生成多少张图片
 - 是否推送 PushPlus
 

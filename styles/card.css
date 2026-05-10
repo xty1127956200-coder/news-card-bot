@@ -239,6 +239,114 @@ h1 {
   background: var(--accent-2);
 }
 
+.briefContent {
+  gap: 18px;
+}
+
+.briefHeading {
+  flex: 0 0 auto;
+  padding: 20px 28px;
+  background: rgba(255, 255, 255, 0.07);
+  border-left: 6px solid var(--accent);
+}
+
+.briefHeading p {
+  margin: 0 0 8px;
+  color: #f6f9ff;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 950;
+}
+
+.briefHeading span {
+  color: #9fb0ca;
+  font-size: 22px;
+  font-weight: 820;
+}
+
+.briefList {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 16px;
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.briefItem {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px;
+  background: rgba(10, 18, 34, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.briefItemTop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.briefItemTop span {
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.briefItemTop p {
+  margin: 0;
+  color: #9fb0ca;
+  font-size: 22px;
+  font-weight: 820;
+}
+
+.briefItem h2 {
+  margin: 0 0 14px;
+  color: #f6f9ff;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 920;
+}
+
+.briefItem ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.briefItem li {
+  color: #eff5ff;
+  font-size: 24px;
+  line-height: 1.32;
+  font-weight: 760;
+}
+
+.briefItem li::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  background: var(--accent-2);
+}
+
+.briefLimit {
+  margin: 12px 0 0;
+  color: #9fb0ca;
+  font-size: 20px;
+  line-height: 1.28;
+  font-weight: 740;
+}
+
 footer {
   position: absolute;
   left: 72px;

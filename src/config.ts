@@ -14,7 +14,7 @@ const envSchema = z.object({
   NEWS_RSS_URLS: z.string().optional(),
   NEWS_KEYWORDS: z.string().default("AI,人工智能,大模型,芯片,科技,金融市场,宏观经济"),
   NEWS_LOOKBACK_HOURS: envNumber(2),
-  MAX_NEWS_CARDS: envNumber(8),
+  MAX_NEWS_CARDS: envNumber(12),
   PUBLIC_BASE_URL: z.string().optional(),
   PUBLIC_OUTPUT_DIR: z.string().default("public/cards"),
   WEB_PUBLIC_CARDS_DIR: z.string().default("web/public/cards")
