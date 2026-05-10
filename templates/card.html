@@ -32,21 +32,18 @@
           </section>
 
           <section class="content">
-            <div class="panel summary">
-              <p class="panelTitle">核心摘要</p>
-              <p>${escapeHtml(data.summary)}</p>
-            </div>
-
-            <div class="panel facts">
-              <p class="panelTitle">关键事实</p>
+            <div class="panel coreInfo">
+              <p class="panelTitle">核心信息</p>
               <ul>
-                ${data.facts.map((fact, index) => `<li><span>0${index + 1}</span>${escapeHtml(fact)}</li>`).join("")}
+                ${data.keyPoints.map((point, index) => `<li><span>0${index + 1}</span>${escapeHtml(point)}</li>`).join("")}
               </ul>
             </div>
 
             <div class="panel why">
               <p class="panelTitle">为什么重要</p>
-              <p>${escapeHtml(data.whyItMatters)}</p>
+              <ul>
+                ${data.whyItMatters.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+              </ul>
             </div>
           </section>
 

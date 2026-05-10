@@ -159,8 +159,7 @@ Get-Content -Encoding UTF8 output\selected-news.json
 - `url`
 - `fetchedAt`
 - `category`
-- `summary`
-- `facts`
+- `keyPoints`
 - `whyItMatters`
 
 如果本轮 0 条新闻，`selected-news.json` 会是空数组，同时会生成 1 张提示卡。

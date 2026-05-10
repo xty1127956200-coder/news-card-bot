@@ -36,9 +36,8 @@ export type SelectedNewsItem = {
   fetchedAt: string;
   category: Exclude<NewsCategory, "提示">;
   titleZh: string;
-  summary: string;
-  facts: string[];
-  whyItMatters: string;
+  keyPoints: string[];
+  whyItMatters: string[];
   score?: number;
   rssSummary?: string;
 };
@@ -47,9 +46,8 @@ export type EmptyStateCard = {
   type: "empty-state";
   category: "提示";
   titleZh: "过去2小时未抓取到足够可核验新闻";
-  summary: "本轮跳过，未生成AI编造内容。";
-  facts: string[];
-  whyItMatters: string;
+  keyPoints: string[];
+  whyItMatters: string[];
   sourceName: string;
   publishedAt: string;
   url: string;

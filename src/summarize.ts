@@ -4,9 +4,8 @@ import type { NewsCategory, NewsItem, SelectedNewsItem } from "./types.js";
 
 type SummaryResponse = {
   titleZh?: string;
-  summary?: string;
-  facts?: string[];
-  whyItMatters?: string;
+  keyPoints?: string[];
+  whyItMatters?: string[];
   category?: string;
 };
 
@@ -52,7 +51,7 @@ async function summarizeOneNews(item: NewsItem): Promise<SelectedNewsItem> {
         },
         {
           role: "user",
-          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。若信息不足，相关字段写“信息不足，需等待更多来源确认。”。分类只能从 AI、芯片、市场、公司、政策、国际 中选一个。输出 JSON：{"titleZh":"","summary":"","facts":["","",""],"whyItMatters":"","category":""}。输入新闻：${JSON.stringify({
+          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。不要把同一事实在不同字段重复表达。若信息不足，在 keyPoints 中明确写“信息不足，需等待更多来源确认”。分类只能从 AI、芯片、市场、公司、政策、国际 中选一个。输出 JSON：{"titleZh":"","keyPoints":["","","","",""],"whyItMatters":["",""],"category":""}。要求：keyPoints 用 4-6 条短句，覆盖发生了什么、涉及主体、关键时间/动作/数据、当前进展、必要背景；whyItMatters 只写影响、风险、趋势意义，不重复 keyPoints 里的事实。输入新闻：${JSON.stringify({
             originalTitle: item.originalTitle,
             sourceName: item.sourceName,
             publishedAt: item.publishedAt,
@@ -84,13 +83,14 @@ function fallbackSummary(item: NewsItem): SelectedNewsItem {
     fetchedAt: item.fetchedAt,
     category,
     titleZh: item.originalTitle.slice(0, 48),
-    summary: item.rssSummary || "信息不足，需等待更多来源确认。",
-    facts: [
+    keyPoints: [
+      item.rssSummary || item.originalTitle,
       `来源：${item.sourceName}`,
       `发布时间：${formatDateTime(item.publishedAt)}`,
-      item.rssSummary ? item.rssSummary.slice(0, 42) : "信息不足，需等待更多来源确认。"
+      `原文链接已保留，可用于核验。`,
+      "信息不足，需等待更多来源确认。"
     ],
-    whyItMatters: "信息不足，需等待更多来源确认。",
+    whyItMatters: ["信息不足，需等待更多来源确认。"],
     score: item.score,
     rssSummary: item.rssSummary
   };
@@ -99,8 +99,10 @@ function fallbackSummary(item: NewsItem): SelectedNewsItem {
 function normalizeSummary(item: NewsItem, parsed: SummaryResponse): SelectedNewsItem {
   const fallback = "信息不足，需等待更多来源确认。";
   const category = normalizeCategory(parsed.category || item.category);
-  const facts = Array.isArray(parsed.facts) ? parsed.facts.filter(Boolean).slice(0, 3) : [];
-  while (facts.length < 2) facts.push(fallback);
+  const keyPoints = Array.isArray(parsed.keyPoints) ? parsed.keyPoints.filter(Boolean).slice(0, 6) : [];
+  while (keyPoints.length < 4) keyPoints.push(fallback);
+  const whyItMatters = Array.isArray(parsed.whyItMatters) ? parsed.whyItMatters.filter(Boolean).slice(0, 2) : [];
+  if (whyItMatters.length === 0) whyItMatters.push(fallback);
 
   return {
     type: "news",
@@ -112,9 +114,8 @@ function normalizeSummary(item: NewsItem, parsed: SummaryResponse): SelectedNews
     fetchedAt: item.fetchedAt,
     category,
     titleZh: (parsed.titleZh || item.originalTitle).slice(0, 80),
-    summary: parsed.summary || fallback,
-    facts,
-    whyItMatters: parsed.whyItMatters || fallback,
+    keyPoints,
+    whyItMatters,
     score: item.score,
     rssSummary: item.rssSummary
   };
