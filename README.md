@@ -260,13 +260,23 @@ Secrets 推荐配置：
 
 Variables 可选配置：
 
-- `LLM_PROVIDER`: 默认 `deepseek`
+- `LLM_PROVIDER`: workflow 已固定为 `deepseek`，通常不需要配置
 - `DEEPSEEK_BASE_URL`: 默认 `https://api.deepseek.com`
 - `DEEPSEEK_MODEL`: 默认 `deepseek-v4-flash`
 - `NEWS_RSS_URLS`: 逗号分隔 RSS 源
 - `NEWS_KEYWORDS`: 逗号分隔关键词
 
 不要把 `.env` 上传到 GitHub。只把密钥填到 GitHub Secrets。
+
+注意：本机 `.env` 不会影响 GitHub Actions。云端运行时只读取 `.github/workflows/news.yml` 里的 `env`、GitHub Secrets 和 GitHub Variables。workflow 里已经明确设置：
+
+```yaml
+MOCK_MODE: "false"
+ENABLE_PUSH: "true"
+LLM_PROVIDER: deepseek
+```
+
+如果你在本机 `.env` 里写了 `MOCK_MODE=true`，它只影响本机，不会让云端 Actions 使用 mock 新闻。
 
 ## GitHub Actions 自动运行
 
@@ -280,13 +290,20 @@ schedule:
 它会每 2 小时运行一次真实新闻流程：
 
 1. 安装依赖。
-2. 抓取过去 2 小时新闻。
-3. 调用 DeepSeek 总结。
-4. 生成 PNG。
-5. 写入 `web/public/cards/cards.json`。
-6. 构建 `web/` PWA。
-7. 发布到 GitHub Pages。
-8. 用 GitHub Pages 图片 HTTPS 链接调用 PushPlus。
+2. 打印安全配置检查：`MOCK_MODE`、`ENABLE_PUSH`、`LLM_PROVIDER`、`PUBLIC_BASE_URL` 是否存在。
+3. 抓取过去 2 小时真实新闻。
+4. 调用 DeepSeek 总结。
+5. 生成 PNG。
+6. 写入 `web/public/cards/cards.json`。
+7. 构建 `web/` PWA。
+8. 发布到 GitHub Pages。
+9. 用 GitHub Pages 图片 HTTPS 链接调用 PushPlus。
+
+真实模式下不会 fallback 到 mock 数据。如果 `MOCK_MODE=false` 但没有抓到新闻，任务会停止并输出：
+
+```text
+真实模式未抓到足够新闻，已停止生成，避免生成虚假新闻。
+```
 
 手动触发测试：
 

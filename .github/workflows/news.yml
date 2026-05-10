@@ -17,6 +17,19 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    env:
+      MOCK_MODE: "false"
+      ENABLE_PUSH: "true"
+      LLM_PROVIDER: deepseek
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
+      DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+      PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL || vars.PUBLIC_BASE_URL }}
+      NEWS_RSS_URLS: ${{ vars.NEWS_RSS_URLS }}
+      NEWS_KEYWORDS: ${{ vars.NEWS_KEYWORDS }}
+      WEB_PUBLIC_CARDS_DIR: web/public/cards
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -33,19 +46,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Print runtime config
+        run: |
+          echo "MOCK_MODE=${MOCK_MODE}"
+          echo "ENABLE_PUSH=${ENABLE_PUSH}"
+          echo "LLM_PROVIDER=${LLM_PROVIDER}"
+          if [ -n "${PUBLIC_BASE_URL}" ]; then
+            echo "PUBLIC_BASE_URL_EXISTS=true"
+          else
+            echo "PUBLIC_BASE_URL_EXISTS=false"
+          fi
+
       - name: Generate cards
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'deepseek' }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
-          DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-v4-flash' }}
-          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
-          NEWS_RSS_URLS: ${{ vars.NEWS_RSS_URLS }}
-          NEWS_KEYWORDS: ${{ vars.NEWS_KEYWORDS }}
-          ENABLE_PUSH: "false"
-          MOCK_MODE: "false"
         run: npm run generate
 
       - name: Commit generated card history
@@ -73,10 +85,4 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Send PushPlus
-        env:
-          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL }}
-          WEB_PUBLIC_CARDS_DIR: web/public/cards
-          ENABLE_PUSH: "true"
-          MOCK_MODE: "false"
         run: npm run push:latest

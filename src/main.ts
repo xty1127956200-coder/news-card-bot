@@ -18,7 +18,10 @@ async function main() {
 
   const rawNews = config.MOCK_MODE ? mockNews(now) : await fetchNews(now);
   if (rawNews.length === 0) {
-    console.log("No news found in the last 2 hours. Use MOCK_MODE=true to test rendering.");
+    if (!config.MOCK_MODE) {
+      throw new Error("真实模式未抓到足够新闻，已停止生成，避免生成虚假新闻。");
+    }
+    console.log("No mock news found. Use MOCK_MODE=true to test rendering.");
     return;
   }
 
@@ -41,7 +44,11 @@ async function main() {
   const imagePaths = await screenshotCards(htmlCards, runId);
   const publishResult = await uploadImages(imagePaths, runId, payload);
   await writeManifest(payload, publishResult.imageUrls, runId);
-  await sendPushPlus(publishResult.imageUrls, now.toISOString());
+  if (process.env.GITHUB_ACTIONS === "true") {
+    console.log("GitHub Actions detected. Skip PushPlus during generate; push:latest runs after GitHub Pages deploy.");
+  } else {
+    await sendPushPlus(publishResult.imageUrls, now.toISOString());
+  }
 
   console.log(`Generated ${imagePaths.length} cards.`);
   console.log(imagePaths.join("\n"));

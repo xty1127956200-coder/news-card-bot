@@ -1,6 +1,31 @@
 {
-  "updatedAt": "2026-05-10T18:10:27.377Z",
+  "updatedAt": "2026-05-10T19:14:49.031Z",
   "runs": [
+    {
+      "id": "20260510T191449Z",
+      "generatedAt": "2026-05-10T19:14:49.031Z",
+      "rangeStart": "2026-05-10T17:14:49.031Z",
+      "rangeEnd": "2026-05-10T19:14:49.031Z",
+      "images": [
+        "C:\\Users\\Zhish\\OneDrive\\文档\\New project 2\\news-card-bot\\web\\public\\cards\\20260510T191449Z-card-1.png",
+        "C:\\Users\\Zhish\\OneDrive\\文档\\New project 2\\news-card-bot\\web\\public\\cards\\20260510T191449Z-card-2.png",
+        "C:\\Users\\Zhish\\OneDrive\\文档\\New project 2\\news-card-bot\\web\\public\\cards\\20260510T191449Z-card-3.png",
+        "C:\\Users\\Zhish\\OneDrive\\文档\\New project 2\\news-card-bot\\web\\public\\cards\\20260510T191449Z-card-4.png",
+        "C:\\Users\\Zhish\\OneDrive\\文档\\New project 2\\news-card-bot\\web\\public\\cards\\20260510T191449Z-card-5.png"
+      ],
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    },
     {
       "id": "20260510T181027Z",
       "generatedAt": "2026-05-10T18:10:27.377Z",

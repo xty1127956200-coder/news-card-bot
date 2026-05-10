@@ -1,6 +1,116 @@
 {
-  "updatedAt": "2026-05-10T18:10:27.377Z",
+  "updatedAt": "2026-05-10T19:14:49.031Z",
   "cards": [
+    {
+      "runId": "20260510T191449Z",
+      "fileName": "20260510T191449Z-card-1.png",
+      "title": "英伟达新一代 AI 芯片供应链排产提前，云厂商资",
+      "generatedAt": "2026-05-10T19:14:49.031Z",
+      "rangeStart": "2026-05-10T17:14:49.031Z",
+      "rangeEnd": "2026-05-10T19:14:49.031Z",
+      "category": "今日主线 & 洞察",
+      "page": "1/5",
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    },
+    {
+      "runId": "20260510T191449Z",
+      "fileName": "20260510T191449Z-card-2.png",
+      "title": "OpenAI 发布企业级多模态工作流更新，强化长",
+      "generatedAt": "2026-05-10T19:14:49.031Z",
+      "rangeStart": "2026-05-10T17:14:49.031Z",
+      "rangeEnd": "2026-05-10T19:14:49.031Z",
+      "category": "AI 大模型",
+      "page": "2/5",
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    },
+    {
+      "runId": "20260510T191449Z",
+      "fileName": "20260510T191449Z-card-3.png",
+      "title": "全球数据中心电力需求继续上行，核能与液冷产业链受",
+      "generatedAt": "2026-05-10T19:14:49.031Z",
+      "rangeStart": "2026-05-10T17:14:49.031Z",
+      "rangeEnd": "2026-05-10T19:14:49.031Z",
+      "category": "科技前沿",
+      "page": "3/5",
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    },
+    {
+      "runId": "20260510T191449Z",
+      "fileName": "20260510T191449Z-card-4.png",
+      "title": "英伟达新一代 AI 芯片供应链排产提前，云厂商资",
+      "generatedAt": "2026-05-10T19:14:49.031Z",
+      "rangeStart": "2026-05-10T17:14:49.031Z",
+      "rangeEnd": "2026-05-10T19:14:49.031Z",
+      "category": "公司与商业",
+      "page": "4/5",
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    },
+    {
+      "runId": "20260510T191449Z",
+      "fileName": "20260510T191449Z-card-5.png",
+      "title": "美联储官员释放谨慎降息信号，科技成长股盘前波动扩",
+      "generatedAt": "2026-05-10T19:14:49.031Z",
+      "rangeStart": "2026-05-10T17:14:49.031Z",
+      "rangeEnd": "2026-05-10T19:14:49.031Z",
+      "category": "市场与宏观",
+      "page": "5/5",
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    },
     {
       "runId": "20260510T181027Z",
       "fileName": "20260510T181027Z-card-1.png",
