@@ -325,6 +325,27 @@ MAX_NEWS_CARDS: "8"
 
 不会打印任何 API Key 或 Token。
 
+## GitHub Actions 中文字体
+
+如果本机 Windows 生成的卡片中文正常，但 GitHub Actions 生成的微信图片里中文变成方框，通常是因为云端 Ubuntu 环境缺少中文 CJK 字体。Playwright 截图时找不到可用中文字体，就会把汉字渲染成方框。
+
+workflow 已在 `npm run generate` 前安装：
+
+```bash
+sudo apt-get update
+sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji fontconfig
+fc-cache -fv
+```
+
+并打印：
+
+```bash
+fc-match "Noto Sans CJK SC"
+fc-list :lang=zh | head -20
+```
+
+卡片 CSS 也优先使用 `Noto Sans CJK SC`。本地 Windows 可以继续使用 `Microsoft YaHei`，不会影响云端。
+
 ## PWA 本地预览
 
 先生成卡片：

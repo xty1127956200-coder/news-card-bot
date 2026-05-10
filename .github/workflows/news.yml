@@ -48,6 +48,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install Chinese fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji fontconfig
+          fc-cache -fv
+
+      - name: Print available Chinese fonts
+        run: |
+          fc-match "Noto Sans CJK SC"
+          fc-list :lang=zh | head -20
+
       - name: Print runtime config
         run: |
           echo "MOCK_MODE=${MOCK_MODE}"

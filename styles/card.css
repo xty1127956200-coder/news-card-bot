@@ -15,8 +15,20 @@ body,
   overflow: hidden;
 }
 
+body,
+#card {
+  font-family:
+    "Noto Sans CJK SC",
+    "Noto Sans SC",
+    "Microsoft YaHei",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Source Han Sans SC",
+    Arial,
+    sans-serif;
+}
+
 body {
-  font-family: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
   background: #070910;
   color: #f3f7ff;
 }
