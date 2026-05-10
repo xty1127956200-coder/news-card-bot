@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>News Card</title>
+    <style>
+      /* __CARD_CSS__ */
+    </style>
+  </head>
+  <body>
+    <main id="card"></main>
+    <script>
+      const data = __CARD_JSON__;
+      const root = document.querySelector("#card");
+      root.style.setProperty("--accent", data.accent.main);
+      root.style.setProperty("--accent-2", data.accent.secondary);
+      root.innerHTML = `
+        <section class="shell">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">PAST 2 HOURS SIGNAL</p>
+              <h1>${escapeHtml(data.category)}</h1>
+            </div>
+            <div class="badge">${escapeHtml(data.page)}</div>
+          </header>
+
+          <section class="hero">
+            <div class="pulse"></div>
+            <p class="label">主线判断</p>
+            <h2>${escapeHtml(data.headline)}</h2>
+            <p class="insight">${escapeHtml(data.insight)}</p>
+          </section>
+
+          <section class="grid">
+            <div class="panel lead">
+              <div class="panel-title">核心要点</div>
+              <ul>
+                ${data.bullets.map((item, index) => `<li><span>0${index + 1}</span>${escapeHtml(item)}</li>`).join("")}
+              </ul>
+            </div>
+
+            <div class="panel tape">
+              <div class="panel-title">新闻样本</div>
+              ${data.related.map((item) => `
+                <article>
+                  <time>${escapeHtml(item.time)}</time>
+                  <h3>${escapeHtml(item.title)}</h3>
+                  <p>${escapeHtml(item.source)}</p>
+                </article>
+              `).join("")}
+            </div>
+          </section>
+
+          <footer>
+            <div class="meta">
+              <span>范围 ${escapeHtml(data.range)}</span>
+              <span>生成 ${escapeHtml(data.generatedAt)}</span>
+              <span>来源 ${escapeHtml(data.sources)}</span>
+            </div>
+            <div class="progress">${progressBars(data.page)}</div>
+          </footer>
+        </section>
+      `;
+
+      function progressBars(pageText) {
+        const [current, total] = pageText.split("/").map(Number);
+        return Array.from({ length: total }, (_, index) => {
+          return `<i class="${index + 1 <= current ? "active" : ""}"></i>`;
+        }).join("");
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        })[char]);
+      }
+    </script>
+  </body>
+</html>

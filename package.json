@@ -1,0 +1,29 @@
+{
+  "name": "news-card-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/main.ts",
+    "generate:mock": "cross-env MOCK_MODE=true tsx src/main.ts",
+    "push:latest": "tsx src/pushLatest.ts",
+    "test:pushplus": "tsx src/testPushPlus.ts",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "postinstall": "playwright install chromium"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "fast-xml-parser": "^4.5.3",
+    "openai": "^4.104.0",
+    "playwright": "^1.52.0",
+    "tsx": "^4.19.4",
+    "zod": "^3.25.20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.18",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "过去2小时新闻卡片",
+  "short_name": "新闻卡片",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070910",
+  "theme_color": "#070910",
+  "description": "查看自动生成的历史新闻图片卡片。",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

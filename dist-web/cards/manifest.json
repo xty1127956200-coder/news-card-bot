@@ -1,0 +1,30 @@
+{
+  "updatedAt": "2026-05-10T18:10:27.377Z",
+  "runs": [
+    {
+      "id": "20260510T181027Z",
+      "generatedAt": "2026-05-10T18:10:27.377Z",
+      "rangeStart": "2026-05-10T16:10:27.377Z",
+      "rangeEnd": "2026-05-10T18:10:27.377Z",
+      "images": [
+        "/cards/20260510T181027Z-card-1.png",
+        "/cards/20260510T181027Z-card-2.png",
+        "/cards/20260510T181027Z-card-3.png",
+        "/cards/20260510T181027Z-card-4.png",
+        "/cards/20260510T181027Z-card-5.png"
+      ],
+      "sources": [
+        "Bloomberg",
+        "TechCrunch",
+        "Reuters",
+        "Financial Times",
+        "机器之心",
+        "Hugging Face",
+        "财新",
+        "The Verge",
+        "CNBC",
+        "证券时报"
+      ]
+    }
+  ]
+}
