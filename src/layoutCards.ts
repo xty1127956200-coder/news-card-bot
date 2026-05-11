@@ -10,6 +10,7 @@ type CardUnit =
   | {
       type: "single";
       sortIndex: number;
+      category: Exclude<NewsCategory, "提示">;
       news: SelectedNewsItem;
     }
   | {
@@ -18,6 +19,8 @@ type CardUnit =
       category: Exclude<NewsCategory, "提示">;
       items: SelectedNewsItem[];
     };
+
+const categoryOrder: Array<Exclude<NewsCategory, "提示">> = ["AI", "芯片", "公司", "市场", "国际", "政策", "科研", "其他"];
 
 export type LayoutResult = {
   cards: CardData[];
@@ -48,7 +51,7 @@ export function layoutCards(items: SelectedNewsItem[], maxCards: number): Layout
   const sufficient = ranked.filter((item) => item.level === "sufficient");
   const short = ranked.filter((item) => item.level === "short");
   const units = [...sufficient.map(toSingleUnit), ...createBriefUnits(short)]
-    .sort((a, b) => a.sortIndex - b.sortIndex)
+    .sort(compareCardUnits)
     .slice(0, maxCards);
 
   const cards: CardData[] = [];
@@ -95,13 +98,17 @@ function isInformationSufficient(item: SelectedNewsItem): boolean {
   if (item.informationLimit) return false;
   const keyPoints = item.keyPoints.filter(Boolean);
   const keyPointChars = countText(keyPoints.join(""));
-  return keyPoints.length >= 4 && keyPointChars >= 80;
+  const totalChars = countText([item.titleZh, ...keyPoints, ...item.whyItMatters].join(""));
+  if (keyPoints.length <= 4 || keyPointChars < 140) return false;
+  if (keyPoints.length >= 7 || keyPointChars >= 180) return true;
+  return totalChars >= 240;
 }
 
 function toSingleUnit(item: RankedNews): CardUnit {
   return {
     type: "single",
     sortIndex: item.rankIndex,
+    category: item.news.category,
     news: item.news
   };
 }
@@ -126,6 +133,26 @@ function createBriefUnits(items: RankedNews[]): CardUnit[] {
     }
   }
   return units;
+}
+
+function compareCardUnits(a: CardUnit, b: CardUnit): number {
+  return (
+    categoryRank(a.category) - categoryRank(b.category) ||
+    unitTypeRank(a) - unitTypeRank(b) ||
+    a.sortIndex - b.sortIndex
+  );
+}
+
+function categoryRank(category: Exclude<NewsCategory, "提示">): number {
+  const index = categoryOrder.indexOf(category);
+  return index === -1 ? categoryOrder.length : index;
+}
+
+function unitTypeRank(unit: CardUnit): number {
+  if (unit.type === "single") return 0;
+  if (unit.items.length === 3) return 1;
+  if (unit.items.length === 2) return 2;
+  return 3;
 }
 
 function markSelectedNews(
@@ -179,9 +206,11 @@ function toBriefCard(
       publishedAt: item.publishedAt,
       url: item.url,
       titleZh: item.titleZh,
-      keyPoints: item.keyPoints.slice(0, 2),
+      keyPoints: item.keyPoints,
+      whyItMatters: item.whyItMatters,
       informationLimit: item.informationLimit,
       category: item.category,
+      rssSummary: item.rssSummary,
       cardItemIndex: index + 1
     }))
   };

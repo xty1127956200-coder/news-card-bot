@@ -1,4 +1,4 @@
-export type NewsCategory = "AI" | "芯片" | "市场" | "公司" | "政策" | "国际" | "提示";
+export type NewsCategory = "AI" | "芯片" | "市场" | "公司" | "政策" | "国际" | "科研" | "其他" | "提示";
 
 export type RawNewsItem = {
   id: string;
@@ -54,7 +54,17 @@ export type SingleNewsCard = Omit<SelectedNewsItem, "type"> & {
 
 export type BriefNewsItem = Pick<
   SelectedNewsItem,
-  "id" | "originalTitle" | "sourceName" | "publishedAt" | "url" | "titleZh" | "keyPoints" | "informationLimit" | "category"
+  | "id"
+  | "originalTitle"
+  | "sourceName"
+  | "publishedAt"
+  | "url"
+  | "titleZh"
+  | "keyPoints"
+  | "whyItMatters"
+  | "informationLimit"
+  | "category"
+  | "rssSummary"
 > & {
   cardItemIndex: number;
 };

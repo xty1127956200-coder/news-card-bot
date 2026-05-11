@@ -158,7 +158,7 @@ h1 {
 .panel {
   padding: 24px 32px;
   background: rgba(10, 18, 34, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, rgba(255, 255, 255, 0.12));
 }
 
 .panelTitle {
@@ -236,32 +236,11 @@ h1 {
   width: 10px;
   height: 10px;
   margin-right: 12px;
-  background: var(--accent-2);
+  background: var(--accent);
 }
 
 .briefContent {
   gap: 18px;
-}
-
-.briefHeading {
-  flex: 0 0 auto;
-  padding: 20px 28px;
-  background: rgba(255, 255, 255, 0.07);
-  border-left: 6px solid var(--accent);
-}
-
-.briefHeading p {
-  margin: 0 0 8px;
-  color: #f6f9ff;
-  font-size: 32px;
-  line-height: 1.1;
-  font-weight: 950;
-}
-
-.briefHeading span {
-  color: #9fb0ca;
-  font-size: 22px;
-  font-weight: 820;
 }
 
 .briefList {
@@ -279,7 +258,10 @@ h1 {
   flex-direction: column;
   padding: 24px 28px;
   background: rgba(10, 18, 34, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-left: 6px solid var(--accent);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.12));
+  border-right: 1px solid color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.12));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.12));
 }
 
 .briefItemTop {
@@ -336,15 +318,87 @@ h1 {
   width: 8px;
   height: 8px;
   margin-right: 10px;
-  background: var(--accent-2);
+  background: var(--accent);
 }
 
 .briefLimit {
-  margin: 12px 0 0;
+  flex: 0 0 auto;
+  margin: 0;
   color: #9fb0ca;
   font-size: 20px;
   line-height: 1.28;
   font-weight: 740;
+}
+
+.briefWhy {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.briefWhy p {
+  margin: 0 0 8px;
+  color: #94a7c6;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.briefWhy ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.briefWhy li {
+  color: #dce8fb;
+  font-size: 23px;
+  line-height: 1.32;
+  font-weight: 740;
+}
+
+.briefCount1 .briefItem {
+  padding: 36px 38px;
+}
+
+.briefCount1 .briefItemTop p {
+  font-size: 25px;
+}
+
+.briefCount1 .briefItem h2 {
+  margin-bottom: 24px;
+  font-size: 44px;
+  line-height: 1.16;
+  -webkit-line-clamp: 3;
+}
+
+.briefCount1 .briefItem ul {
+  gap: 14px;
+}
+
+.briefCount1 .briefItem li {
+  font-size: 30px;
+  line-height: 1.34;
+}
+
+.briefCount2 .briefItem {
+  padding: 30px 34px;
+}
+
+.briefCount2 .briefItem h2 {
+  font-size: 36px;
+  line-height: 1.18;
+  -webkit-line-clamp: 3;
+}
+
+.briefCount2 .briefItem li {
+  font-size: 27px;
+  line-height: 1.34;
+}
+
+.briefCount3 .briefItem h2 {
+  font-size: 32px;
 }
 
 footer {

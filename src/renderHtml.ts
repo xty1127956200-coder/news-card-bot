@@ -25,7 +25,7 @@ function toCardView(payload: RenderPayload, card: CardData, index: number) {
     ...card,
     ...text,
     cardTitle: card.titleZh,
-    sourceLine: card.type === "brief" ? "过去2小时短新闻精选" : `${card.sourceName} · ${publishedAtText}`,
+    sourceLine: card.type === "brief" ? "过去2小时短新闻精选" : "",
     page: `${index + 1}/${pageTotal}`,
     pageIndex: index + 1,
     pageTotal,
@@ -33,8 +33,8 @@ function toCardView(payload: RenderPayload, card: CardData, index: number) {
     generatedAt: formatDateTime(payload.generatedAt),
     publishedAtText,
     shortUrl: card.type === "brief" ? "多条原文见 cards.json" : card.url ? shortUrl(card.url) : "无原文链接",
-    items: card.type === "brief" ? card.items.map(normalizeBriefItem) : [],
-    accent: pickAccent(index)
+    items: card.type === "brief" ? normalizeBriefItems(card.items) : [],
+    accent: pickAccent(card.category)
   };
 }
 
@@ -53,17 +53,55 @@ function normalizeCardText(card: CardData) {
   };
 }
 
-function normalizeBriefItem(item: BriefNewsItem) {
-  const keyPoints = dedupeTextItems(item.keyPoints ?? []).slice(0, 2);
+function normalizeBriefItems(items: BriefNewsItem[]) {
+  const usedKeys = new Set<string>();
+  return items.map((item) => normalizeBriefItem(item, items.length, usedKeys));
+}
+
+function normalizeBriefItem(item: BriefNewsItem, itemCount: number, cardUsedKeys: Set<string>) {
+  const pointLimit = itemCount === 1 ? 5 : itemCount === 2 ? 3 : 2;
+  cardUsedKeys.add(toCompareKey(item.titleZh));
+  cardUsedKeys.add(toCompareKey(item.originalTitle));
+  const keyPoints = normalizeBriefKeyPoints(item, pointLimit, cardUsedKeys);
+  const usedKeys = new Set([item.titleZh, item.originalTitle, ...keyPoints].map(toCompareKey));
+  const whyItMatters = itemCount === 1 ? dedupeTextItems(item.whyItMatters ?? [], usedKeys).slice(0, 2) : [];
   const declaredLimit = String(item.informationLimit ?? "").trim();
   const hasLimitInItems = (item.keyPoints ?? []).some(isInfoLimitSentence);
   return {
     ...item,
     keyPoints,
+    whyItMatters,
     informationLimit: (declaredLimit || hasLimitInItems) ? INFO_LIMIT_TEXT : "",
     publishedAtText: item.publishedAt ? formatDateTime(item.publishedAt) : "",
     shortUrl: item.url ? shortUrl(item.url) : "无原文链接"
   };
+}
+
+function normalizeBriefKeyPoints(item: BriefNewsItem, limit: number, cardUsedKeys: Set<string>): string[] {
+  const titleKeys = new Set([item.titleZh, item.originalTitle].map(toCompareKey));
+  const points = dedupeTextItems(item.keyPoints ?? [])
+    .filter((point) => !titleKeys.has(toCompareKey(point)))
+    .filter((point) => !isMetadataPoint(point))
+    .filter((point) => {
+      const key = toCompareKey(point);
+      if (cardUsedKeys.has(key)) return false;
+      cardUsedKeys.add(key);
+      return true;
+    });
+
+  if (points.length === 0 && item.rssSummary && !titleKeys.has(toCompareKey(item.rssSummary))) {
+    const key = toCompareKey(item.rssSummary);
+    if (!cardUsedKeys.has(key)) {
+      points.push(item.rssSummary);
+      cardUsedKeys.add(key);
+    }
+  }
+
+  return points.slice(0, limit);
+}
+
+function isMetadataPoint(value: string): boolean {
+  return /^(来源媒体|来源|发布时间|原文链接|原文)/.test(value.trim());
 }
 
 function dedupeTextItems(values: unknown[], existingKeys = new Set<string>()): string[] {
@@ -89,15 +127,19 @@ function toCompareKey(value: string): string {
   return value.replace(/[，,。.!！?？；;：:\s]/g, "").toLowerCase();
 }
 
-function pickAccent(index: number) {
-  return [
-    { main: "#28f5a6", secondary: "#4aa3ff" },
-    { main: "#4aa3ff", secondary: "#a86bff" },
-    { main: "#a86bff", secondary: "#28f5a6" },
-    { main: "#32d3ff", secondary: "#28f5a6" },
-    { main: "#b37dff", secondary: "#32d3ff" },
-    { main: "#28f5a6", secondary: "#b37dff" }
-  ][index % 6];
+function pickAccent(category: string) {
+  const accents: Record<string, { main: string; secondary: string }> = {
+    AI: { main: "#4aa3ff", secondary: "#32d3ff" },
+    芯片: { main: "#a86bff", secondary: "#6e7bff" },
+    公司: { main: "#28f5a6", secondary: "#78ffd6" },
+    市场: { main: "#f6c453", secondary: "#ffe08a" },
+    国际: { main: "#32d3ff", secondary: "#28f5a6" },
+    政策: { main: "#ff9b45", secondary: "#ffd166" },
+    科研: { main: "#6e7bff", secondary: "#a86bff" },
+    其他: { main: "#8ea0bc", secondary: "#b8c4d8" },
+    提示: { main: "#8ea0bc", secondary: "#b8c4d8" }
+  };
+  return accents[category] ?? accents.其他;
 }
 
 function formatDateTime(value: string): string {

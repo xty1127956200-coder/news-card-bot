@@ -27,7 +27,7 @@
 
           <section class="hero">
             <div class="pulse"></div>
-            <p class="sourceLine">${escapeHtml(data.sourceLine)}</p>
+            ${data.sourceLine ? `<p class="sourceLine">${escapeHtml(data.sourceLine)}</p>` : ""}
             <h1>${escapeHtml(data.cardTitle)}</h1>
           </section>
 
@@ -67,11 +67,7 @@
 
       function renderBriefContent(data) {
         return `<section class="content briefContent">
-          <div class="briefHeading">
-            <p>${escapeHtml(data.category)} 快讯</p>
-            <span>过去2小时短新闻精选</span>
-          </div>
-          <div class="briefList">
+          <div class="briefList briefCount${(data.items || []).length}">
             ${(data.items || []).map((item, index) => `<article class="briefItem">
               <div class="briefItemTop">
                 <span>0${index + 1}</span>
@@ -81,9 +77,15 @@
               <ul>
                 ${(item.keyPoints || []).map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
               </ul>
-              ${item.informationLimit ? `<p class="briefLimit">${escapeHtml(item.informationLimit)}</p>` : ""}
+              ${(item.whyItMatters || []).length ? `<div class="briefWhy">
+                <p>为什么重要</p>
+                <ul>
+                  ${item.whyItMatters.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}
+                </ul>
+              </div>` : ""}
             </article>`).join("")}
           </div>
+          ${data.informationLimit ? `<p class="briefLimit">${escapeHtml(data.informationLimit)}</p>` : ""}
         </section>`;
       }
 

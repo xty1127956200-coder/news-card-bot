@@ -6,7 +6,9 @@ const categoryKeywords: Record<Exclude<NewsCategory, "提示">, string[]> = {
   市场: ["Nasdaq", "S&P 500", "美股", "科技股", "Federal Reserve", "inflation", "降息", "宏观", "market", "stocks"],
   公司: ["Microsoft", "Apple", "Google", "Meta", "Amazon", "Tesla", "SpaceX", "Elon Musk", "公司", "business"],
   政策: ["regulation", "policy", "监管", "政策", "antitrust", "ban", "export controls", "法案", "rules"],
-  国际: ["global", "Europe", "China", "US", "international", "欧盟", "美国", "中国", "全球", "国际"]
+  国际: ["global", "Europe", "China", "US", "international", "欧盟", "美国", "中国", "全球", "国际"],
+  科研: ["research", "science", "paper", "study", "Nature", "Science", "MIT", "NASA", "研究", "科研", "论文"],
+  其他: []
 };
 
 const importanceKeywords = [
@@ -68,7 +70,7 @@ function normalizeTitle(title: string): string {
 
 function classify(item: NewsItem): Exclude<NewsCategory, "提示"> {
   const text = `${item.originalTitle} ${item.rssSummary ?? ""} ${item.sourceName}`;
-  let best: Exclude<NewsCategory, "提示"> = "国际";
+  let best: Exclude<NewsCategory, "提示"> = "其他";
   let bestScore = -1;
   for (const [category, keywords] of Object.entries(categoryKeywords) as Array<[Exclude<NewsCategory, "提示">, string[]]>) {
     const hits = keywords.filter((keyword) => text.toLowerCase().includes(keyword.toLowerCase())).length;

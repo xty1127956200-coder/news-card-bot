@@ -10,7 +10,7 @@ type SummaryResponse = {
   category?: string;
 };
 
-const allowedCategories: Array<Exclude<NewsCategory, "提示">> = ["AI", "芯片", "市场", "公司", "政策", "国际"];
+const allowedCategories: Array<Exclude<NewsCategory, "提示">> = ["AI", "芯片", "市场", "公司", "政策", "国际", "科研", "其他"];
 const INFO_LIMIT_TEXT = "信息不足，需等待更多来源确认";
 
 export async function summarizeNewsItems(items: NewsItem[]): Promise<SelectedNewsItem[]> {
@@ -53,7 +53,7 @@ async function summarizeOneNews(item: NewsItem): Promise<SelectedNewsItem> {
         },
         {
           role: "user",
-          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。不要把同一事实在不同字段重复表达。分类只能从 AI、芯片、市场、公司、政策、国际 中选一个。
+          content: `请只基于这一条新闻生成中文卡片文案。每次只总结一条新闻，不允许预测、脑补、扩展背景或编造。不要把同一事实在不同字段重复表达。分类只能从 AI、芯片、公司、市场、国际、政策、科研、其他 中选一个。
 
 输出严格 JSON：
 {"titleZh":"","keyPoints":["","","","","","",""],"whyItMatters":["","",""],"informationLimit":"","category":""}
