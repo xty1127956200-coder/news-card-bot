@@ -80,7 +80,7 @@ export const defaultRssUrls = [
 
 export const effectiveRssUrls = rssUrls.length > 0 ? rssUrls : [...defaultRssUrls];
 
-export const cardCategories = ["AI", "芯片", "市场", "公司", "政策", "国际"] as const;
+export const cardCategories = ["AI", "芯片", "公司", "市场", "国际", "政策", "科研", "其他"] as const;
 
 export type CardCategory = (typeof cardCategories)[number];
 
