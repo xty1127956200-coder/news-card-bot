@@ -1,7 +1,9 @@
 import type { NewsItem } from "./types.js";
 
-const TITLE_SIMILARITY_THRESHOLD = 0.78;
-const TOKEN_SIMILARITY_THRESHOLD = 0.82;
+const TITLE_SIMILARITY_THRESHOLD = 0.76;
+const TOKEN_SIMILARITY_THRESHOLD = 0.78;
+const ANCHORED_TITLE_SIMILARITY_THRESHOLD = 0.62;
+const CONTAINMENT_MIN_RATIO = 0.58;
 
 export type DuplicateNewsGroup = {
   kept: NewsItem;
@@ -84,14 +86,24 @@ function duplicateReason(a: NewsItem, b: NewsItem): { reason: string; similarity
   const titleB = normalizeTitle(b.originalTitle, b.sourceName);
   if (titleA && titleB && titleA === titleB) return { reason: "same-normalized-title", similarity: 1 };
 
+  const anchorScore = sharedAnchorScore(a, b, titleA, titleB);
+  const containmentSimilarity = containment(titleA, titleB);
+  if (anchorScore >= 2 && containmentSimilarity >= CONTAINMENT_MIN_RATIO) {
+    return { reason: "anchored-title-containment", similarity: round(containmentSimilarity) };
+  }
+
   const tokenSimilarity = jaccard(titleTokens(titleA), titleTokens(titleB));
   if (tokenSimilarity >= TOKEN_SIMILARITY_THRESHOLD) {
     return { reason: "token-title-similarity", similarity: round(tokenSimilarity) };
   }
 
-  const ngramSimilarity = jaccard(ngrams(titleA, hasCjk(titleA) || hasCjk(titleB) ? 2 : 3), ngrams(titleB, hasCjk(titleA) || hasCjk(titleB) ? 2 : 3));
+  const ngramSimilarity = titleSimilarity(titleA, titleB);
   if (ngramSimilarity >= TITLE_SIMILARITY_THRESHOLD) {
     return { reason: "ngram-title-similarity", similarity: round(ngramSimilarity) };
+  }
+
+  if (anchorScore >= 2 && ngramSimilarity >= ANCHORED_TITLE_SIMILARITY_THRESHOLD) {
+    return { reason: "same-subject-action-title-similarity", similarity: round(ngramSimilarity) };
   }
 
   return null;
@@ -151,9 +163,15 @@ export function normalizeTitle(title: string, sourceName = ""): string {
   return title
     .toLowerCase()
     .replace(/https?:\/\/\S+/g, " ")
+    .replace(/^[\s\[\(（【]*(breaking|update|updated|exclusive|live|快讯|突发|更新|独家|直播|最新)[\]\)）】\s:：-]*/gi, " ")
+    .replace(/\s*[\[(（【](breaking|update|updated|exclusive|live|快讯|突发|更新|独家|直播|最新)[\])）】]\s*/gi, " ")
     .replace(new RegExp(`\\s+[-|_–—]\\s+${source}$`, "i"), " ")
-    .replace(/\s+[-|_–—]\s+(reuters|bloomberg|ap news|associated press|financial times|the verge|techcrunch|ars technica|bbc|le monde|cnbc|路透社|彭博社|财联社|证券时报|机器之心|量子位|36氪)$/i, " ")
-    .replace(/^(breaking|update|exclusive|快讯|突发|独家)[:：]\s*/i, " ")
+    .replace(/\s+[-|_–—]\s+(reuters|bloomberg|ap news|associated press|financial times|the verge|techcrunch|ars technica|bbc|le monde|cnbc|yahoo finance|marketwatch|路透社|彭博社|财联社|证券时报|机器之心|量子位|36氪|华尔街见闻|新浪财经|腾讯新闻|网易新闻|搜狐新闻)$/i, " ")
+    .replace(/\s+(via|from|source)\s+\p{L}+$/iu, " ")
+    .replace(/^(breaking|update|updated|exclusive|live|快讯|突发|更新|独家|直播|最新)[:：]\s*/i, " ")
+    .replace(/\b(says|said|report|reports|reported|according to|sources)\b/gi, " ")
+    .replace(/\b(news|stock|stocks|shares|share|today)\b/gi, " ")
+    .replace(/\b(新闻|消息|报道称|报告称|据悉|盘中|今日|股票|股价)\b/g, " ")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -165,6 +183,86 @@ function titleTokens(normalizedTitle: string): string[] {
     .filter((token) => token.length >= 2 && !stopWords.has(token));
   if (words.length >= 3) return words;
   return ngrams(normalizedTitle.replace(/\s+/g, ""), 2);
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const cjk = hasCjk(a) || hasCjk(b);
+  if (!cjk) return jaccard(ngrams(a, 3), ngrams(b, 3));
+  const bigram = jaccard(ngrams(a, 2), ngrams(b, 2));
+  const trigram = jaccard(ngrams(a, 3), ngrams(b, 3));
+  return Math.max(bigram * 0.65 + trigram * 0.35, trigram);
+}
+
+function containment(a: string, b: string): number {
+  const compactA = a.replace(/\s+/g, "");
+  const compactB = b.replace(/\s+/g, "");
+  if (compactA.length < 8 || compactB.length < 8) return 0;
+  if (compactA.includes(compactB) || compactB.includes(compactA)) {
+    return Math.min(compactA.length, compactB.length) / Math.max(compactA.length, compactB.length);
+  }
+  return longestCommonSubstringRatio(compactA, compactB);
+}
+
+function longestCommonSubstringRatio(a: string, b: string): number {
+  const charsA = [...a];
+  const charsB = [...b];
+  const previous = new Array(charsB.length + 1).fill(0);
+  let best = 0;
+  for (let i = 1; i <= charsA.length; i += 1) {
+    for (let j = charsB.length; j >= 1; j -= 1) {
+      if (charsA[i - 1] === charsB[j - 1]) {
+        previous[j] = previous[j - 1] + 1;
+        best = Math.max(best, previous[j]);
+      } else {
+        previous[j] = 0;
+      }
+    }
+  }
+  return best / Math.max(charsA.length, charsB.length);
+}
+
+function sharedAnchorScore(a: NewsItem, b: NewsItem, titleA: string, titleB: string): number {
+  const entitiesA = extractEntities(`${titleA} ${a.rssSummary ?? ""}`);
+  const entitiesB = extractEntities(`${titleB} ${b.rssSummary ?? ""}`);
+  const actionsA = extractActions(titleA);
+  const actionsB = extractActions(titleB);
+  const sharedEntities = overlapCount(entitiesA, entitiesB);
+  const sharedActions = overlapCount(actionsA, actionsB);
+  if (sharedEntities === 0) return 0;
+  return sharedEntities + sharedActions;
+}
+
+function extractEntities(value: string): Set<string> {
+  const normalized = value.toLowerCase();
+  const entities = new Set<string>();
+  for (const entity of knownEntities) {
+    if (normalized.includes(entity.toLowerCase())) entities.add(entity.toLowerCase());
+  }
+  const englishEntities = value.match(/\b[A-Z][A-Za-z0-9&.-]{1,}(?:\s+[A-Z][A-Za-z0-9&.-]{1,}){0,2}\b/g) ?? [];
+  for (const entity of englishEntities) {
+    const key = entity.toLowerCase();
+    if (!stopWords.has(key) && key.length >= 3) entities.add(key);
+  }
+  const chineseEntities = value.match(/[\p{Script=Han}]{2,8}(公司|集团|银行|交易所|监管|委员会|法院|政府|部门|团队|机构|大学|研究院)/gu) ?? [];
+  for (const entity of chineseEntities) entities.add(entity.toLowerCase());
+  return entities;
+}
+
+function extractActions(value: string): Set<string> {
+  const normalized = value.toLowerCase();
+  const actions = new Set<string>();
+  for (const [name, patterns] of Object.entries(actionPatterns)) {
+    if (patterns.some((pattern) => pattern.test(normalized))) actions.add(name);
+  }
+  return actions;
+}
+
+function overlapCount<T>(a: Set<T>, b: Set<T>): number {
+  let count = 0;
+  for (const item of a) {
+    if (b.has(item)) count += 1;
+  }
+  return count;
 }
 
 function ngrams(value: string, size: number): string[] {
@@ -231,3 +329,49 @@ const stopWords = new Set([
   "have",
   "news"
 ]);
+
+const knownEntities = [
+  "OpenAI",
+  "DeepSeek",
+  "Anthropic",
+  "Claude",
+  "Gemini",
+  "Google",
+  "Microsoft",
+  "Apple",
+  "Meta",
+  "Amazon",
+  "NVIDIA",
+  "AMD",
+  "TSMC",
+  "Tesla",
+  "SpaceX",
+  "xAI",
+  "Nasdaq",
+  "S&P 500",
+  "Federal Reserve",
+  "SEC",
+  "欧盟",
+  "美国",
+  "中国",
+  "台积电",
+  "英伟达",
+  "微软",
+  "苹果",
+  "谷歌",
+  "特斯拉",
+  "美联储",
+  "证监会"
+];
+
+const actionPatterns: Record<string, RegExp[]> = {
+  launch: [/launch|release|roll out|推出|发布|上线|推出|发布|亮相/],
+  update: [/update|upgrade|更新|升级|改进|增强/],
+  regulate: [/regulat|rule|policy|ban|probe|investigat|监管|规定|政策|禁令|调查|审查/],
+  finance: [/earnings|revenue|profit|funding|raise|ipo|stock|shares|财报|营收|利润|融资|上市|股价|股票/],
+  partnership: [/partner|deal|agreement|collaborat|合作|协议|交易|签署/],
+  chip: [/chip|gpu|semiconductor|wafer|foundry|芯片|半导体|晶圆|代工|gpu/],
+  model: [/model|llm|agent|reasoning|benchmark|大模型|模型|智能体|推理|基准/],
+  legal: [/lawsuit|court|appeal|settlement|sue|起诉|法院|诉讼|和解|裁定/],
+  market: [/market|nasdaq|index|inflation|rate cut|市场|纳指|指数|通胀|降息|加息/]
+};

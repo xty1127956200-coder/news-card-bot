@@ -95,15 +95,22 @@ function logDedupeStats(fetchResult: FetchNewsResult, result: DedupeNewsResult) 
   console.log(`规则去重后新闻数: ${result.items.length}`);
   console.log(`被去重的数量: ${duplicateCount}`);
 
-  for (const group of result.duplicateGroups.slice(0, 20)) {
-    console.log(`重复组保留: ${group.kept.originalTitle}`);
-    for (const duplicate of group.duplicates.slice(0, 5)) {
+  for (const group of result.duplicateGroups.slice(0, 40)) {
+    console.log(`重复组保留: [${group.kept.sourceName}] ${group.kept.originalTitle}`);
+    for (const duplicate of group.duplicates.slice(0, 8)) {
       const similarity = duplicate.similarity === undefined ? "" : ` similarity=${duplicate.similarity}`;
-      console.log(`  合并(${duplicate.reason}${similarity}): ${duplicate.item.originalTitle}`);
+      console.log(`  合并(${duplicate.reason}${similarity}) [${duplicate.item.sourceName}]: ${duplicate.item.originalTitle}`);
     }
   }
-  if (result.duplicateGroups.length > 20) {
-    console.log(`重复组日志已截断: 仅显示前 20 组，共 ${result.duplicateGroups.length} 组`);
+  if (result.duplicateGroups.length > 40) {
+    console.log(`重复组日志已截断: 仅显示前 40 组，共 ${result.duplicateGroups.length} 组`);
+  }
+  console.log("规则去重后保留新闻来源:");
+  for (const item of result.items.slice(0, 60)) {
+    console.log(`  保留 [${item.sourceName}] ${item.originalTitle}`);
+  }
+  if (result.items.length > 60) {
+    console.log(`保留新闻来源日志已截断: 仅显示前 60 条，共 ${result.items.length} 条`);
   }
 }
 
