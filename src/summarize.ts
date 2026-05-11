@@ -40,6 +40,7 @@ async function summarizeOneNews(item: NewsItem): Promise<SelectedNewsItem> {
     baseURL: llm.baseURL
   });
 
+  let content = "";
   try {
     const response = await client.chat.completions.create({
       model: llm.model,
@@ -88,12 +89,13 @@ informationLimit 要求：
       ]
     });
 
-    const content = response.choices[0]?.message.content ?? "{}";
-    const parsed = JSON.parse(content) as SummaryResponse;
-    return normalizeSummary(item, parsed);
+    content = response.choices[0]?.message.content ?? "{}";
   } catch (error) {
     throw new Error(formatLlmError(error, llm));
   }
+
+  const parsed = parseSummaryResponse(content);
+  return normalizeSummary(item, parsed);
 }
 
 function fallbackSummary(item: NewsItem): SelectedNewsItem {
@@ -149,6 +151,84 @@ function normalizeSummary(item: NewsItem, parsed: SummaryResponse): SelectedNews
     score: item.score,
     rssSummary: item.rssSummary
   };
+}
+
+function parseSummaryResponse(content: string): SummaryResponse {
+  try {
+    return JSON.parse(content) as SummaryResponse;
+  } catch {
+    const extracted = extractJsonObject(content);
+    if (extracted) {
+      try {
+        return JSON.parse(extracted) as SummaryResponse;
+      } catch (error) {
+        throwJsonParseError(content, error);
+      }
+    }
+    throwJsonParseError(content, undefined);
+  }
+}
+
+export function extractJsonObject(text: string): string | null {
+  const cleaned = stripMarkdownFence(text).trim();
+  const direct = extractBalancedJson(cleaned);
+  if (direct) return direct;
+
+  const fenced = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)];
+  for (const match of fenced) {
+    const candidate = extractBalancedJson(match[1].trim());
+    if (candidate) return candidate;
+  }
+
+  return extractBalancedJson(text);
+}
+
+function extractBalancedJson(text: string): string | null {
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, index + 1);
+    }
+  }
+
+  return null;
+}
+
+function stripMarkdownFence(text: string): string {
+  return text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "");
+}
+
+function throwJsonParseError(content: string, error: unknown): never {
+  const preview = content.slice(0, 1000);
+  console.error(`LLM_JSON_PARSE_FAILED raw response preview:\n${preview}`);
+  const message = error instanceof Error ? error.message : "No complete JSON object found in LLM response.";
+  throw new Error(`LLM_JSON_PARSE_FAILED: ${message}`);
 }
 
 function fallbackKeyPoints(item: NewsItem): string[] {
