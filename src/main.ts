@@ -2,8 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { subHours } from "date-fns";
 import { config, effectiveRssUrls, getPublicBaseUrl } from "./config.js";
+import { dedupeSimilarNews, type DedupeNewsResult } from "./dedupeNews.js";
 import { fetchNews, mockNews } from "./fetchNews.js";
-import { dedupeNews, rankNews } from "./rankNews.js";
+import { rankNews } from "./rankNews.js";
 import { renderHtml } from "./renderHtml.js";
 import { screenshotCards } from "./screenshot.js";
 import { summarizeNewsItems } from "./summarize.js";
@@ -27,7 +28,9 @@ async function main() {
   await fs.mkdir("output", { recursive: true });
   await fs.writeFile(path.resolve("output", "raw-news.json"), JSON.stringify(fetchResult.rawNews, null, 2), "utf8");
 
-  const dedupedNews = dedupeNews(fetchResult.recentNews);
+  const dedupeResult = dedupeSimilarNews(fetchResult.recentNews);
+  logDedupeStats(fetchResult, dedupeResult);
+  const dedupedNews = dedupeResult.items;
   const rankedNews = rankNews(dedupedNews);
   const selectedCandidates = rankedNews.slice(0, maxCards * 3);
   const summarizedNews = selectedCandidates.length > 0 ? await summarizeNewsItems(selectedCandidates) : [];
@@ -85,6 +88,25 @@ function logLayoutStats(stats: ReturnType<typeof layoutCards>["stats"]) {
   }
 }
 
+function logDedupeStats(fetchResult: FetchNewsResult, result: DedupeNewsResult) {
+  const duplicateCount = fetchResult.recentNews.length - result.items.length;
+  console.log(`抓取原始新闻数: ${fetchResult.rawNews.length}`);
+  console.log(`进入去重的时间窗口新闻数: ${fetchResult.recentNews.length}`);
+  console.log(`规则去重后新闻数: ${result.items.length}`);
+  console.log(`被去重的数量: ${duplicateCount}`);
+
+  for (const group of result.duplicateGroups.slice(0, 20)) {
+    console.log(`重复组保留: ${group.kept.originalTitle}`);
+    for (const duplicate of group.duplicates.slice(0, 5)) {
+      const similarity = duplicate.similarity === undefined ? "" : ` similarity=${duplicate.similarity}`;
+      console.log(`  合并(${duplicate.reason}${similarity}): ${duplicate.item.originalTitle}`);
+    }
+  }
+  if (result.duplicateGroups.length > 20) {
+    console.log(`重复组日志已截断: 仅显示前 20 组，共 ${result.duplicateGroups.length} 组`);
+  }
+}
+
 function logRuntimeConfig(now: Date, rangeStart: Date, maxCards: number) {
   console.log(`MOCK_MODE=${config.MOCK_MODE}`);
   console.log(`ENABLE_PUSH=${config.ENABLE_PUSH}`);
@@ -116,11 +138,12 @@ function mockFetchResult(now: Date, rangeStart: Date): FetchNewsResult {
     sourceName: item.sourceName,
     publishedAt: item.publishedAt,
     url: item.url,
-    fetchedAt: item.fetchedAt,
-    rssUrl: item.rssUrl,
-    rssTitle: item.rssTitle,
-    summary: item.rssSummary
-  }));
+      fetchedAt: item.fetchedAt,
+      rssUrl: item.rssUrl,
+      rssTitle: item.rssTitle,
+      guid: item.guid,
+      summary: item.rssSummary
+    }));
 
   return {
     rawNews,

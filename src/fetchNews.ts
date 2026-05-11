@@ -50,6 +50,7 @@ export async function fetchNews(windowStart: Date, windowEnd: Date): Promise<Fet
       fetchedAt: item.fetchedAt,
       rssUrl: item.rssUrl,
       rssTitle: item.rssTitle,
+      guid: item.guid,
       rssSummary: item.summary
     }));
 
@@ -79,6 +80,7 @@ async function fetchRss(url: string, fetchedAt: string): Promise<RawNewsItem[]> 
   return items.map((item) => {
     const originalTitle = stripHtml(getText(item.title)) || null;
     const link = normalizeUrl(getLink(item));
+    const guid = getGuid(item);
     const publishedAt = parseDate(item.pubDate ?? item.published ?? item.updated ?? item["dc:date"]);
     const sourceName = stripHtml(getText(item.source) || getText(item["dc:creator"]) || rssTitle || hostName(url)) || null;
     const summary = stripHtml(getText(item.description ?? item.summary ?? item.content ?? item["content:encoded"]));
@@ -93,6 +95,7 @@ async function fetchRss(url: string, fetchedAt: string): Promise<RawNewsItem[]> 
       fetchedAt,
       rssUrl: url,
       rssTitle,
+      guid,
       summary
     };
   });
@@ -128,6 +131,12 @@ function getLink(item: Record<string, unknown>): string | null {
   }
   if (typeof item.guid === "string" && item.guid.startsWith("http")) return item.guid;
   return null;
+}
+
+function getGuid(item: Record<string, unknown>): string | undefined {
+  const value = item.guid ?? item.id;
+  const text = getText(value) || (typeof value === "string" ? value : "");
+  return text.trim() || undefined;
 }
 
 function parseDate(value: unknown): string | null {

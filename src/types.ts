@@ -9,6 +9,7 @@ export type RawNewsItem = {
   fetchedAt: string;
   rssUrl: string;
   rssTitle?: string;
+  guid?: string;
   summary?: string;
 };
 
@@ -21,6 +22,7 @@ export type NewsItem = {
   fetchedAt: string;
   rssUrl: string;
   rssTitle?: string;
+  guid?: string;
   rssSummary?: string;
   category?: NewsCategory;
   score?: number;
