@@ -7,6 +7,7 @@ import { fetchNews, mockNews } from "./fetchNews.js";
 import { rankNews } from "./rankNews.js";
 import { renderHtml } from "./renderHtml.js";
 import { screenshotCards } from "./screenshot.js";
+import { semanticDedupeNews, type SemanticDedupeResult } from "./semanticDedupe.js";
 import { summarizeNewsItems } from "./summarize.js";
 import { uploadImages } from "./uploadImage.js";
 import { sendPushPlus } from "./sendPushPlus.js";
@@ -33,7 +34,9 @@ async function main() {
   const dedupedNews = dedupeResult.items;
   const rankedNews = rankNews(dedupedNews);
   const selectedCandidates = rankedNews.slice(0, maxCards * 3);
-  const summarizedNews = selectedCandidates.length > 0 ? await summarizeNewsItems(selectedCandidates) : [];
+  const semanticDedupeResult = await semanticDedupeNews(selectedCandidates);
+  logSemanticDedupeStats(selectedCandidates.length, semanticDedupeResult);
+  const summarizedNews = semanticDedupeResult.items.length > 0 ? await summarizeNewsItems(semanticDedupeResult.items) : [];
   const layout = layoutCards(summarizedNews, maxCards);
   const selectedNews = layout.selectedNews;
   const cards: CardData[] = layout.cards.length > 0 ? layout.cards : [createEmptyStateCard()];
@@ -111,6 +114,26 @@ function logDedupeStats(fetchResult: FetchNewsResult, result: DedupeNewsResult) 
   }
   if (result.items.length > 60) {
     console.log(`保留新闻来源日志已截断: 仅显示前 60 条，共 ${result.items.length} 条`);
+  }
+}
+
+function logSemanticDedupeStats(beforeCount: number, result: SemanticDedupeResult) {
+  console.log(`LLM 语义去重前数量: ${beforeCount}`);
+  console.log(`LLM 语义去重后数量: ${result.items.length}`);
+  console.log(`LLM 语义去重合并组数量: ${result.groups.length}`);
+  if (result.skipped) {
+    console.log(`LLM 语义去重已跳过或回退: ${result.error ?? "unknown reason"}`);
+  }
+
+  for (const group of result.groups.slice(0, 30)) {
+    const reason = group.reason ? ` reason=${group.reason}` : "";
+    console.log(`LLM 重复组保留${reason}: [${group.kept.sourceName}] ${group.kept.originalTitle}`);
+    for (const duplicate of group.duplicates.slice(0, 8)) {
+      console.log(`  LLM 合并: [${duplicate.sourceName}] ${duplicate.originalTitle}`);
+    }
+  }
+  if (result.groups.length > 30) {
+    console.log(`LLM 重复组日志已截断: 仅显示前 30 组，共 ${result.groups.length} 组`);
   }
 }
 
